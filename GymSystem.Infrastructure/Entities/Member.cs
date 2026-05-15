@@ -13,4 +13,7 @@ public class Member : GymUser
     public ICollection<Membership> Memberships { get; set; } = [];
 
     public ICollection<Booking> Bookings { get; set; } = [];
+
+
+    public ICollection<CheckIn> CheckIns { get; set; } = [];
 }

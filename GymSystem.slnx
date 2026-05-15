@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
   <Project Path="GymSystem.Domain/GymSystem.Domain.csproj" />
   <Project Path="GymSystem.Infrastructure/GymSystem.Infrastructure.csproj" />
   <Project Path="GymSystem.UI/GymSystem.UI.csproj" />

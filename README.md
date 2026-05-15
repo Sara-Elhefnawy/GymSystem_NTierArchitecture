@@ -1,3 +1,45 @@
+# My Architecture Decision: Why I Chose N-Tier
+
+When starting the GymSystem project, I researched several architecture patterns to find the best fit.
+
+- **Clean Architecture** - Domain-centric with strict dependency rules
+- **Vertical Slice Architecture** - Feature-based organization
+- **N-Tier Architecture** - Traditional layer-based separation
+
+Each had compelling advantages, but choosing the wrong one could either overcomplicate development or create technical debt. As a first-time MVC developer working on a side project with limited time, I needed to balance learning, productivity, and future scalability.
+
+## Why I Chose N-Tier
+
+### 1. Right Complexity Level
+
+- **Not too simple**: Proper separation of concerns
+- **Not too complex**: Avoids Clean's overhead or Vertical Slice's CQRS requirements
+
+### 2. Perfect for GymSystem
+
+My gym app is primarily CRUD:
+
+- Register/update members
+- Create/book classes
+- Log workouts
+- View schedules
+
+N-Tier handles these efficiently without overengineering.
+
+### 3. Future-Proof
+
+- Can refactor to Clean Architecture if domain logic becomes complex
+- Can adopt Vertical Slices if features multiply
+- Not locked into the architecture permanently
+- Provides solid foundation for growth
+
+### 4. Time Constraints
+
+- Side project with limited time
+- Need to ship features quickly
+- Can't afford to get stuck in architectural complexity
+
+---
 # Software Architecture Styles
 
 ## Clean Architecture
@@ -166,43 +208,151 @@ Traditional layer-based architecture with logical separation:
 
 ---
 
-# My Architecture Decision: Why I Chose N-Tier
+# Repository Pattern & EF Core
 
-When starting the GymSystem project, I researched several architecture patterns to find the best fit.
+## Research Repository Pattern
 
-- **Clean Architecture** - Domain-centric with strict dependency rules
-- **Vertical Slice Architecture** - Feature-based organization
-- **N-Tier Architecture** - Traditional layer-based separation
+The Repository Pattern mediates between the domain and data mapping layers, acting like an in-memory collection of domain objects. It centralizes data access logic and provides a clean separation of concerns.
 
-Each had compelling advantages, but choosing the wrong one could either overcomplicate development or create technical debt. As a first-time MVC developer working on a side project with limited time, I needed to balance learning, productivity, and future scalability.
+### Classic Repository Pattern Structure
 
-## Why I Chose N-Tier
+```
+/Repositories/
+  /Interfaces/
+    IMemberRepository.cs
+    IClassRepository.cs
+  /Implementations/
+    MemberRepository.cs
+    ClassRepository.cs
+```
 
-### 1. Right Complexity Level
+## Why Some Teams Avoid Repository Pattern with EF Core
 
-- **Not too simple**: Proper separation of concerns
-- **Not too complex**: Avoids Clean's overhead or Vertical Slice's CQRS requirements
+Teams avoid the Repository Pattern with EF Core for these reasons:
 
-### 2. Perfect for GymSystem
+- **EF Core is already a repository** - DbSet provides the same methods (Find, Add, Remove, Where)
+- **Added complexity without benefit** - Writing wrapper code that just calls EF Core is redundant
+- **Query limitations** - Generic repositories struggle with efficient filtering and includes (`.Include(x => x.Classes)`)
+- **Leaky abstractions** - Can't fully hide EF Core features without crippling functionality
+- **Maintenance burden** - Every new entity needs a new repository interface and implementation
 
-My gym app is primarily CRUD:
+## How DbContext Already Behaves Like Repository and Unit of Work
 
-- Register/update members
-- Create/book classes
-- Log workouts
-- View schedules
+### Repository Pattern Features in DbContext
 
-N-Tier handles these efficiently without overengineering.
+| Repository Feature | How DbContext Provides It |
+|-------------------|---------------------------|
+| `GetById()` | `DbContext.Find<T>(id)` |
+| `GetAll()` | `DbContext.Set<T>()` |
+| `Add()` | `DbContext.Add()` |
+| `Update()` | `DbContext.Update()` |
+| `Delete()` | `DbContext.Remove()` |
+| Query filtering | `Where()`, `FirstOrDefault()`, `Include()` |
 
-### 3. Future-Proof
+### Unit of Work Pattern Features in DbContext
 
-- Can refactor to Clean Architecture if domain logic becomes complex
-- Can adopt Vertical Slices if features multiply
-- Not locked into the architecture permanently
-- Provides solid foundation for growth
+| Unit of Work Feature | How DbContext Provides It |
+|----------------------|---------------------------|
+| Track multiple changes | ChangeTracker tracks all entities |
+| Commit as a transaction | `SaveChangesAsync()` wraps all changes |
+| Rollback | Discard changes or do not call SaveChanges |
+| Atomic operations | All changes succeed or fail together |
 
-### 4. Time Constraints
+## How to Use an Interface for DbContext Without Creating Repositories
 
-- Side project with limited time
-- Need to ship features quickly
-- Can't afford to get stuck in architectural complexity
+Instead of creating repository wrappers, simply inject `AppDbContext` (or its interface) directly into your services:
+
+### Step 1: Define the DbContext Interface
+
+```csharp
+public interface IAppDbContext
+{
+    DbSet<Member> Members { get; set; }
+    DbSet<Class> Classes { get; set; }
+    DbSet<Booking> Bookings { get; set; }
+    DbSet<WorkoutLog> WorkoutLogs { get; set; }
+    
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    
+    // Optional: For raw SQL queries
+    Task<IEnumerable<T>> SqlQueryAsync<T>(string sql, params object[] parameters);
+}
+```
+
+### Step 2: Implement the Interface on Your DbContext
+
+```csharp
+public class AppDbContext : DbContext, IAppDbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
+    
+    public DbSet<Member> Members { get; set; }
+    public DbSet<Class> Classes { get; set; }
+    public DbSet<Booking> Bookings { get; set; }
+    public DbSet<WorkoutLog> WorkoutLogs { get; set; }
+    
+    public async Task<IEnumerable<T>> SqlQueryAsync<T>(string sql, params object[] parameters)
+    {
+        return await Set<T>().FromSqlRaw(sql, parameters).ToListAsync();
+    }
+}
+```
+
+### Step 3: Inject the Interface Directly Into Your Service
+
+```csharp
+// N-Tier Business Layer Service
+public class MemberService
+{
+    private readonly IAppDbContext _context;
+    
+    public MemberService(IAppDbContext context)
+    {
+        _context = context;
+    }
+    
+    public async Task<Member?> GetMemberAsync(int id)
+    {
+        // Direct DbContext usage - no repository needed
+        return await _context.Members
+            .Include(m => m.Bookings)
+            .ThenInclude(b => b.Class)
+            .FirstOrDefaultAsync(m => m.Id == id);
+    }
+    
+    public async Task CreateMemberAsync(Member member)
+    {
+        await _context.Members.AddAsync(member);
+        await _context.SaveChangesAsync();
+    }
+    
+    public async Task UpdateMemberAsync(Member member)
+    {
+        _context.Members.Update(member);
+        await _context.SaveChangesAsync();
+    }
+    
+    public async Task DeleteMemberAsync(int id)
+    {
+        var member = await _context.Members.FindAsync(id);
+        if (member != null)
+        {
+            _context.Members.Remove(member);
+            await _context.SaveChangesAsync();
+        }
+    }
+}
+```
+
+### Step 4: Register in Dependency Injection
+
+```csharp
+// Program.cs or Startup.cs
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register the interface
+builder.Services.AddScoped<IAppDbContext, AppDbContext>();
+```

@@ -1,0 +1,44 @@
+﻿@model List<GymSystem.Domain.DTOs.CheckInDto>
+
+@{
+    ViewData["Title"] = "Today's Check-ins";
+}
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3>Today's Check-ins</h3>
+            <h5>Total: @ViewBag.TodayCount members</h5>
+        </div>
+        <div class="card-body">
+            @if (!Model.Any())
+            {
+                <div class="alert alert-info">No check-ins recorded today.</div>
+            }
+            else
+            {
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Member Name</th>
+                            <th>Check-in Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var checkIn in Model)
+                        {
+                            <tr>
+                                <td>@checkIn.MemberId</td>
+                                <td>@checkIn.MemberName</td>
+                                <td>@checkIn.CheckInTime.ToString("hh:mm tt")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            
+            <a asp-action="Index" class="btn btn-secondary">Back to Check-in</a>
+        </div>
+    </div>
+</div>

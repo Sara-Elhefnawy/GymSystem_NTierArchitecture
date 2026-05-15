@@ -1,5 +1,7 @@
+using GymSystem.Domain.Interfaces;
 using GymSystem.Infrastructure.Data;
 using GymSystem.Infrastructure.Seeders;
+using GymSystem.UI.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +11,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<GymAppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+// Register IAppDbContext
+builder.Services.AddScoped<IAppDbContext, GymAppDbContext>();
+
+// Register services
+builder.Services.AddScoped<CheckInService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<DatabaseSeeder>();
