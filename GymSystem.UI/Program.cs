@@ -1,14 +1,21 @@
 using GymSystem.Infrastructure.Data;
+using GymSystem.Infrastructure.Interceptor;
 using GymSystem.Infrastructure.Seeders;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// applying interceptors
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<AuditInterceptor>();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<GymAppDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
+builder.Services.AddDbContext<GymAppDbContext>((serviceProvider, options) =>
+{
+    var auditInterceptor = serviceProvider.GetRequiredService<AuditInterceptor>();
+    options
+        .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .AddInterceptors(auditInterceptor);
+});
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<DatabaseSeeder>();
