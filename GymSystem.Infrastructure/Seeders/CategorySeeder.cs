@@ -8,8 +8,6 @@ public static class CategorySeeder
 {
     public static async Task SeedAsync(GymAppDbContext dbContext)
     {
-        await dbContext.Database.EnsureCreatedAsync();
-
         if (await dbContext.Categories.AnyAsync())
             return;
 
