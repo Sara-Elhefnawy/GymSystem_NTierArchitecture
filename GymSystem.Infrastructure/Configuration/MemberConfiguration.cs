@@ -4,30 +4,18 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GymSystem.Infrastructure.Configuration;
 
-public class MemberConfiguration : GymUserConfigurations<Member>
+public class MemberConfiguration : IEntityTypeConfiguration<Member>
 {
-    public override void Configure(EntityTypeBuilder<Member> builder)
+    public void Configure(EntityTypeBuilder<Member> builder)
     {
-        base.Configure(builder);
+        builder.HasBaseType<GymUser>();
 
         builder.Property(m => m.JoinDate)
             .HasDefaultValueSql("GETDATE()");
 
-        builder.OwnsOne(m => m.HealthRecord, healthRecord =>
-        {
-            healthRecord.Property(h => h.BloodType)
-                .HasColumnType("varchar")
-                .HasMaxLength(5);
-
-            healthRecord.Property(h => h.Height)
-                .HasColumnType("decimal(10,2)");
-
-            healthRecord.Property(h => h.Weight)
-                .HasColumnType("decimal(10,2)");
-
-            healthRecord.Property(h => h.Note)
-                .HasColumnType("varchar")
-                .HasMaxLength(500);
-        });
+        builder.HasOne(m => m.HealthRecord)
+            .WithOne(h => h.Member)
+            .HasForeignKey<HealthRecord>(h => h.MemberId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

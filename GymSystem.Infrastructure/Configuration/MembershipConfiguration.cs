@@ -19,7 +19,9 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
         builder.Property(m => m.StartDate)
             .HasDefaultValueSql("GETDATE()");
 
-        builder.HasIndex(m => new { m.MemberId, m.PlanId }).IsUnique();
+        builder.HasIndex(m => new { m.MemberId, m.PlanId })
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
         builder.HasQueryFilter(m => !m.IsDeleted);
     }

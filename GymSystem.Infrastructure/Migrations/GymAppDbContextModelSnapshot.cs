@@ -63,7 +63,8 @@ namespace GymSystem.Infrastructure.Migrations
                     b.HasIndex("SessionId");
 
                     b.HasIndex("MemberId", "SessionId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("Bookings");
                 });
@@ -109,7 +110,7 @@ namespace GymSystem.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateOnly>("DateOfBirth")
+                    b.Property<DateTime>("DateOfBirth")
                         .HasColumnType("date");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -120,8 +121,10 @@ namespace GymSystem.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar");
 
-                    b.Property<int>("Gender")
-                        .HasColumnType("int");
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -146,11 +149,74 @@ namespace GymSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("GymUser");
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.HasIndex("Phone")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("GymUsers", t =>
+                        {
+                            t.HasCheckConstraint("GymUser_EmailCheck", "Email LIKE '_%@_%._%'");
+
+                            t.HasCheckConstraint("GymUser_PhoneCheck", "[Phone] LIKE '010%' OR [Phone] LIKE '011%' OR [Phone] LIKE '012%' OR [Phone] LIKE '015%'");
+                        });
 
                     b.HasDiscriminator<string>("UserType").HasValue("GymUser");
 
                     b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("GymSystem.Infrastructure.Entities.HealthRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BloodType")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Height")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastUpdate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MemberId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MemberId")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("HealthRecord");
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Membership", b =>
@@ -192,7 +258,8 @@ namespace GymSystem.Infrastructure.Migrations
                     b.HasIndex("PlanId");
 
                     b.HasIndex("MemberId", "PlanId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("Memberships");
                 });
@@ -237,6 +304,10 @@ namespace GymSystem.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("Plans", t =>
                         {
@@ -310,12 +381,6 @@ namespace GymSystem.Infrastructure.Migrations
                     b.Property<string>("Photo")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("Phone")
-                        .IsUnique();
-
                     b.ToTable(t =>
                         {
                             t.HasCheckConstraint("GymUser_EmailCheck", "Email LIKE '_%@_%._%'");
@@ -335,14 +400,10 @@ namespace GymSystem.Infrastructure.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<int>("Specialty")
-                        .HasColumnType("int");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("Phone")
-                        .IsUnique();
+                    b.Property<string>("Specialty")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.ToTable(t =>
                         {
@@ -398,7 +459,7 @@ namespace GymSystem.Infrastructure.Migrations
 
                             b1.HasKey("GymUserId");
 
-                            b1.ToTable("GymUser");
+                            b1.ToTable("GymUsers");
 
                             b1.WithOwner()
                                 .HasForeignKey("GymUserId");
@@ -406,6 +467,17 @@ namespace GymSystem.Infrastructure.Migrations
 
                     b.Navigation("Address")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("GymSystem.Infrastructure.Entities.HealthRecord", b =>
+                {
+                    b.HasOne("GymSystem.Infrastructure.Entities.Member", "Member")
+                        .WithOne("HealthRecord")
+                        .HasForeignKey("GymSystem.Infrastructure.Entities.HealthRecord", "MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Member");
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Membership", b =>
@@ -446,39 +518,6 @@ namespace GymSystem.Infrastructure.Migrations
                     b.Navigation("Trainer");
                 });
 
-            modelBuilder.Entity("GymSystem.Infrastructure.Entities.Member", b =>
-                {
-                    b.OwnsOne("GymSystem.Infrastructure.Entities.HealthRecord", "HealthRecord", b1 =>
-                        {
-                            b1.Property<int>("MemberId")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("BloodType")
-                                .IsRequired()
-                                .HasMaxLength(5)
-                                .HasColumnType("varchar");
-
-                            b1.Property<decimal>("Height")
-                                .HasColumnType("decimal(10,2)");
-
-                            b1.Property<string>("Note")
-                                .HasMaxLength(500)
-                                .HasColumnType("varchar");
-
-                            b1.Property<decimal>("Weight")
-                                .HasColumnType("decimal(10,2)");
-
-                            b1.HasKey("MemberId");
-
-                            b1.ToTable("GymUser");
-
-                            b1.WithOwner()
-                                .HasForeignKey("MemberId");
-                        });
-
-                    b.Navigation("HealthRecord");
-                });
-
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Category", b =>
                 {
                     b.Navigation("Sessions");
@@ -497,6 +536,8 @@ namespace GymSystem.Infrastructure.Migrations
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Member", b =>
                 {
                     b.Navigation("Bookings");
+
+                    b.Navigation("HealthRecord");
 
                     b.Navigation("Memberships");
                 });

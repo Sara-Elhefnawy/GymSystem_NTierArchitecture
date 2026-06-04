@@ -1,11 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using GymSystem.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace GymSystem.Infrastructure.Interceptor;
 
 public class SoftDeleteInterceptor : SaveChangesInterceptor
 {
-    private static void ApplySoftDelete(DbContext context)
+    private readonly IAnonymizationService _anonymizationService;
+
+    public SoftDeleteInterceptor(
+        IAnonymizationService anonymizationService)
+    {
+        _anonymizationService = anonymizationService;
+    }
+
+    private void ApplySoftDelete(DbContext context)
     {
         var deletedEntries = context.ChangeTracker.Entries()
             .Where(e => e.State == EntityState.Deleted)
@@ -13,16 +22,18 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
 
         foreach (var entry in deletedEntries)
         {
-            // Soft delete: BaseEntity declares IsDeleted / DeletedAt (reflection still works)
             var isDeletedProp = entry.Entity.GetType().GetProperty("IsDeleted");
-            var deletedAtProp = entry.Entity.GetType().GetProperty("DeletedAt");
+            if (isDeletedProp is null) continue;
 
-            if (isDeletedProp is null) continue;   // no soft delete — allow hard delete
-
-            // Convert Delete → Update with IsDeleted = true
             entry.State = EntityState.Modified;
             isDeletedProp.SetValue(entry.Entity, true);
+
+            var deletedAtProp = entry.Entity.GetType().GetProperty("DeletedAt");
             deletedAtProp?.SetValue(entry.Entity, DateTime.UtcNow);
+
+            // ONLY anonymize if you need to free up unique constraints
+            // Your filtered indexes already handle this!
+            _anonymizationService.Anonymize(entry.Entity);
         }
     }
 

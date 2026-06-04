@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GymSystem.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreation : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -29,7 +29,7 @@ namespace GymSystem.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "GymUser",
+                name: "GymUsers",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -37,19 +37,15 @@ namespace GymSystem.Infrastructure.Migrations
                     Name = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false),
                     Email = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false),
                     Phone = table.Column<string>(type: "varchar(11)", maxLength: 11, nullable: false),
-                    DateOfBirth = table.Column<DateOnly>(type: "date", nullable: false),
-                    Gender = table.Column<int>(type: "int", nullable: false),
+                    DateOfBirth = table.Column<DateTime>(type: "date", nullable: false),
+                    Gender = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     BuildingNumber = table.Column<int>(type: "int", nullable: false),
                     Street = table.Column<string>(type: "varchar(30)", maxLength: 30, nullable: false),
                     City = table.Column<string>(type: "varchar(30)", maxLength: 30, nullable: false),
                     UserType = table.Column<string>(type: "nvarchar(8)", maxLength: 8, nullable: false),
                     Photo = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     JoinDate = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "GETDATE()"),
-                    HealthRecord_Height = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
-                    HealthRecord_Weight = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
-                    HealthRecord_BloodType = table.Column<string>(type: "varchar(5)", maxLength: 5, nullable: true),
-                    HealthRecord_Note = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: true),
-                    Specialty = table.Column<int>(type: "int", nullable: true),
+                    Specialty = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     HireDate = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "GETDATE()"),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -58,7 +54,7 @@ namespace GymSystem.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_GymUser", x => x.Id);
+                    table.PrimaryKey("PK_GymUsers", x => x.Id);
                     table.CheckConstraint("GymUser_EmailCheck", "Email LIKE '_%@_%._%'");
                     table.CheckConstraint("GymUser_PhoneCheck", "[Phone] LIKE '010%' OR [Phone] LIKE '011%' OR [Phone] LIKE '012%' OR [Phone] LIKE '015%'");
                 });
@@ -83,6 +79,34 @@ namespace GymSystem.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_Plans", x => x.Id);
                     table.CheckConstraint("PlanDurationCheck", "DurationDays Between 1 and 365");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "HealthRecord",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Height = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    Weight = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    BloodType = table.Column<string>(type: "varchar(5)", maxLength: 5, nullable: false),
+                    Note = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: true),
+                    LastUpdate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    MemberId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_HealthRecord", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_HealthRecord_GymUsers_MemberId",
+                        column: x => x.MemberId,
+                        principalTable: "GymUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -114,9 +138,9 @@ namespace GymSystem.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Sessions_GymUser_TrainerId",
+                        name: "FK_Sessions_GymUsers_TrainerId",
                         column: x => x.TrainerId,
-                        principalTable: "GymUser",
+                        principalTable: "GymUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -140,9 +164,9 @@ namespace GymSystem.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_Memberships", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Memberships_GymUser_MemberId",
+                        name: "FK_Memberships_GymUsers_MemberId",
                         column: x => x.MemberId,
-                        principalTable: "GymUser",
+                        principalTable: "GymUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -172,9 +196,9 @@ namespace GymSystem.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_Bookings", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Bookings_GymUser_MemberId",
+                        name: "FK_Bookings_GymUsers_MemberId",
                         column: x => x.MemberId,
-                        principalTable: "GymUser",
+                        principalTable: "GymUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -189,7 +213,8 @@ namespace GymSystem.Infrastructure.Migrations
                 name: "IX_Bookings_MemberId_SessionId",
                 table: "Bookings",
                 columns: new[] { "MemberId", "SessionId" },
-                unique: true);
+                unique: true,
+                filter: "[IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Bookings_SessionId",
@@ -197,27 +222,44 @@ namespace GymSystem.Infrastructure.Migrations
                 column: "SessionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_GymUser_Email",
-                table: "GymUser",
+                name: "IX_GymUsers_Email",
+                table: "GymUsers",
                 column: "Email",
-                unique: true);
+                unique: true,
+                filter: "[IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
-                name: "IX_GymUser_Phone",
-                table: "GymUser",
+                name: "IX_GymUsers_Phone",
+                table: "GymUsers",
                 column: "Phone",
-                unique: true);
+                unique: true,
+                filter: "[IsDeleted] = 0");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_HealthRecord_MemberId",
+                table: "HealthRecord",
+                column: "MemberId",
+                unique: true,
+                filter: "[IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Memberships_MemberId_PlanId",
                 table: "Memberships",
                 columns: new[] { "MemberId", "PlanId" },
-                unique: true);
+                unique: true,
+                filter: "[IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Memberships_PlanId",
                 table: "Memberships",
                 column: "PlanId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Plans_Name",
+                table: "Plans",
+                column: "Name",
+                unique: true,
+                filter: "[IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sessions_CategoryId",
@@ -237,6 +279,9 @@ namespace GymSystem.Infrastructure.Migrations
                 name: "Bookings");
 
             migrationBuilder.DropTable(
+                name: "HealthRecord");
+
+            migrationBuilder.DropTable(
                 name: "Memberships");
 
             migrationBuilder.DropTable(
@@ -249,7 +294,7 @@ namespace GymSystem.Infrastructure.Migrations
                 name: "Categories");
 
             migrationBuilder.DropTable(
-                name: "GymUser");
+                name: "GymUsers");
         }
     }
 }

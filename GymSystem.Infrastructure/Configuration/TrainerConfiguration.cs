@@ -4,13 +4,17 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GymSystem.Infrastructure.Configuration;
 
-public class TrainerConfiguration : GymUserConfigurations<Trainer>
+public class TrainerConfiguration : IEntityTypeConfiguration<Trainer>
 {
-    public override void Configure(EntityTypeBuilder<Trainer> builder)
+    public void Configure(EntityTypeBuilder<Trainer> builder)
     {
-        base.Configure(builder);
+        builder.HasBaseType<GymUser>();
 
         builder.Property(t => t.HireDate)
             .HasDefaultValueSql("GETDATE()");
+
+        builder.Property(t => t.Specialty)
+            .HasConversion<string>()
+            .HasMaxLength(20);
     }
 }

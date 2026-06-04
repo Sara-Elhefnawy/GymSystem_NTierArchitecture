@@ -11,6 +11,10 @@ public class PlanConfiguration : IEntityTypeConfiguration<Plan>
         builder.Property(p => p.Name)
             .HasMaxLength(50);
 
+        builder.HasIndex(p => p.Name)
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
+
         builder.Property(p => p.Description)
             .HasMaxLength(200);
 

@@ -10,7 +10,7 @@ public abstract class GymUser : BaseEntity
 
     public string Phone { get; set; } = default!;
 
-    public DateOnly DateOfBirth { get; set; }
+    public DateTime DateOfBirth { get; set; }
 
     public Gender Gender { get; set; }
 

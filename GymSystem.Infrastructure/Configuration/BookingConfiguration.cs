@@ -21,7 +21,9 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .WithMany(s => s.Bookings)
             .HasForeignKey(b => b.SessionId);
 
-        builder.HasIndex(b => new { b.MemberId, b.SessionId }).IsUnique();
+        builder.HasIndex(b => new { b.MemberId, b.SessionId })
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
         builder.HasQueryFilter(b => !b.IsDeleted);
 

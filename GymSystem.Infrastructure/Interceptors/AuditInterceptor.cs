@@ -1,5 +1,4 @@
 ﻿using GymSystem.Infrastructure.Entities;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
@@ -7,17 +6,11 @@ namespace GymSystem.Infrastructure.Interceptor;
 
 public class AuditInterceptor : SaveChangesInterceptor
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
-    public AuditInterceptor(IHttpContextAccessor httpContextAccessor)
-    {
-        _httpContextAccessor = httpContextAccessor;
-    }
+    public AuditInterceptor() {}
 
     private void ApplyAudit(DbContext context)
     {
-        var currentUser = _httpContextAccessor.HttpContext?.User?.Identity?.Name
-                          ?? "System";
+        var currentUser = "System";
         var now = DateTime.UtcNow;
 
         foreach (var entry in context.ChangeTracker.Entries())
@@ -43,6 +36,9 @@ public class AuditInterceptor : SaveChangesInterceptor
                         break;
                     case Booking bk when bk.BookingDate == default:
                         bk.BookingDate = now;
+                        break;
+                    case HealthRecord hr:
+                        hr.LastUpdate = now;
                         break;
                 }
 

@@ -4,10 +4,29 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GymSystem.Infrastructure.Configuration;
 
-public class GymUserConfigurations<T> : IEntityTypeConfiguration<T> where T : GymUser
+// Why remove the generic?
+/*
+ * Generic version meant each derived type (Member, Trainer) 
+ *      got its OWN copy of the configuration
+ * Non-generic version applies configuration ONCE to the base GymUser entity
+ * EF Core's TPH (Table Per Hierarchy) mapping means all GymUser properties are in ONE table - 
+ *      so configure them once, not multiple times
+ */
+
+public class GymUserConfigurations : IEntityTypeConfiguration<GymUser>
 {
-    public virtual void Configure(EntityTypeBuilder<T> builder)
+    public virtual void Configure(EntityTypeBuilder<GymUser> builder)
     {
+        // don't need to use this code in OnModelConfiguring and following separation of concerns
+        builder.HasQueryFilter(u => !u.IsDeleted);
+
+        builder.HasDiscriminator<string>("UserType")
+            .HasValue<Member>("Member")
+            .HasValue<Trainer>("Trainer");
+
+
+
+
         builder.Property(x => x.Name)
                .HasColumnType("varchar")
                .HasMaxLength(50);
@@ -40,10 +59,16 @@ public class GymUserConfigurations<T> : IEntityTypeConfiguration<T> where T : Gy
                .HasColumnType("date");
 
         builder.Property(x => x.Gender)
-               .HasConversion<int>();
+               .HasConversion<string>()
+               .HasMaxLength(20);
 
-        builder.HasIndex(x => x.Email).IsUnique();
-        builder.HasIndex(x => x.Phone).IsUnique();
+        builder.HasIndex(x => x.Email)
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
+
+        builder.HasIndex(x => x.Phone)
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
         builder.ToTable(t =>
         {

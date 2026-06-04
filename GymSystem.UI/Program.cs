@@ -1,39 +1,39 @@
-using GymSystem.Infrastructure.Data;
-using GymSystem.Infrastructure.Interceptor;
+using GymSystem.Domain;
+using GymSystem.Infrastructure;
 using GymSystem.Infrastructure.Seeders;
-using Microsoft.EntityFrameworkCore;
+using GymSystem.UI;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// applying interceptors
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddSingleton<AuditInterceptor>();
-
-builder.Services.AddDbContext<GymAppDbContext>((serviceProvider, options) =>
-{
-    var auditInterceptor = serviceProvider.GetRequiredService<AuditInterceptor>();
-    options
-        .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-        .AddInterceptors(auditInterceptor);
-});
-
-builder.Services.AddControllersWithViews();
-builder.Services.AddScoped<DatabaseSeeder>();
+// Add services using the DependencyInjection class
+builder.Services
+    .AddInfrastructureServices(builder.Configuration)
+    .AddUIServices()
+    .AddDomainServices();
 
 var app = builder.Build();
 
-app.UseRouting();
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
+{
+    app.UseExceptionHandler("/Home/Error");
+}
 
-app.MapStaticAssets();
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.MapDefaultControllerRoute();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Run Seeder
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
+    await using var scope = app.Services.CreateAsyncScope();
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
     await seeder.SeedAllAsync();
 }
