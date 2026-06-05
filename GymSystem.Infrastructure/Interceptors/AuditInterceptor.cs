@@ -10,7 +10,7 @@ public class AuditInterceptor : SaveChangesInterceptor
 
     private void ApplyAudit(DbContext context)
     {
-        var currentUser = "System";
+        //var currentUser = "System";
         var now = DateTime.UtcNow;
 
         foreach (var entry in context.ChangeTracker.Entries())

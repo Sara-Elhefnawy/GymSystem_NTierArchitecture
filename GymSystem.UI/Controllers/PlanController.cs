@@ -1,31 +1,25 @@
-﻿using GymSystem.Infrastructure.Data;
+﻿using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymSystem.UI.Controllers;
 
-public class PlanController : Controller
+public class PlanController(IRepository<Plan> plans) : Controller
 {
-    private readonly GymAppDbContext _context;
-    public IPlanRepository Repo { get; }
-
-    public PlanController(GymAppDbContext context)
+    public async Task<IActionResult> Index(CancellationToken ct)
     {
-        _context = context;
-        Repo = new PlanRepository(_context);
+        var items = await plans.GetAllAsync(ct);
+
+        return View(items);
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Details(int id, CancellationToken ct)
     {
-        var plans = await Repo.GetAllAsync();
+        var item = await plans.GetByIdAsync(id, ct);
 
-        return View(plans);
-    }
+        if (item is null) 
+            return NotFound();
 
-    public async Task<IActionResult> Details(int id)
-    {
-        var plan = await Repo.GetByIdAsync(id);
-
-        return View(plan);
+        return View(item);
     }
 }

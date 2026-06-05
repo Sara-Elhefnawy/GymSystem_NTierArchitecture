@@ -9,11 +9,9 @@ public class HealthRecordConfiguration : IEntityTypeConfiguration<HealthRecord>
     public void Configure(EntityTypeBuilder<HealthRecord> builder)
     {
         builder.Property(h => h.BloodType)
+            .HasConversion<string>()
             .HasColumnType("varchar")
-            .HasMaxLength(5);
-
-        builder.Property(h => h.BloodType)
-            .HasConversion<string>();
+            .HasMaxLength(20);
 
         builder.Property(h => h.Height)
             .HasColumnType("decimal(10,2)");

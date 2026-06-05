@@ -5,14 +5,8 @@ using System.Diagnostics;
 
 namespace GymSystem.UI.Controllers;
 
-public class HomeController : Controller
+public class HomeController(GymAppDbContext context) : Controller
 {
-    private readonly GymAppDbContext _context;
-    public HomeController(GymAppDbContext context)
-    {
-        _context = context;
-    }
-
     public IActionResult Index()
     {
         return View();

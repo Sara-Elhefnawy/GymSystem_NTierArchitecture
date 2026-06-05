@@ -1,4 +1,4 @@
-﻿using GymSystem.Infrastructure.Seeders;
+﻿using GymSystem.Domain.Services;
 
 namespace GymSystem.UI;
 
@@ -8,6 +8,8 @@ public static class DependencyInjection
         this IServiceCollection services)
     {
         services.AddControllersWithViews();
+
+        services.AddScoped<IMemberService, MemberService>();
 
         return services;
     }
