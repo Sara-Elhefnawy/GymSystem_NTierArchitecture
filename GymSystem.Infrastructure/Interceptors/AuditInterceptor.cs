@@ -12,6 +12,7 @@ public class AuditInterceptor : SaveChangesInterceptor
     {
         //var currentUser = "System";
         var now = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(now);
 
         foreach (var entry in context.ChangeTracker.Entries())
         {
@@ -26,13 +27,13 @@ public class AuditInterceptor : SaveChangesInterceptor
                 switch (entry.Entity)
                 {
                     case Member m when m.JoinDate == default:
-                        m.JoinDate = now.Date;   // "joined gym" — not the same concept as CreatedAt
+                        m.JoinDate = today;   // "joined gym" — not the same concept as CreatedAt
                         break;
                     case Trainer t when t.HireDate == default:
-                        t.HireDate = now.Date;
+                        t.HireDate = today;
                         break;
                     case Membership ms when ms.StartDate == default:
-                        ms.StartDate = now;
+                        ms.StartDate = today;
                         break;
                     case Booking bk when bk.BookingDate == default:
                         bk.BookingDate = now;

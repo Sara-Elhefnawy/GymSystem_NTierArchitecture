@@ -1,6 +1,6 @@
 ﻿@if (TempData["Success"] != null)
 {
-    <script>
+    <script asp-append-version="true">
         document.addEventListener("DOMContentLoaded", function () {
             const alertBox = document.getElementById("Alert");
             if (alertBox) {
@@ -16,7 +16,7 @@
 }
 else if (TempData["Error"] != null)
 {
-    <script>
+    <script asp-append-version="true">
         document.addEventListener("DOMContentLoaded", function () {
             const alertBox = document.getElementById("Alert");
             if (alertBox) {

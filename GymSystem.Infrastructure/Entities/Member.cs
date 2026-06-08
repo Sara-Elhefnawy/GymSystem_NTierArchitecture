@@ -4,7 +4,7 @@ public class Member : GymUser
 {
     public string? Photo { get; set; }   // Required at registration
 
-    public DateTime JoinDate { get; set; } = DateTime.Now;
+    public DateOnly JoinDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
 
     // Cannot delete a member who has active bookings
 

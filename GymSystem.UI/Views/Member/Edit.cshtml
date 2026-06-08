@@ -1,5 +1,5 @@
-﻿@* @using GymSystem.UI.ViewModels.Member
-@model IEnumerable<MemberIndexViewModel>
+﻿@using GymSystem.Domain.DTOs.Member
+@model EditMemberDTO
 
 <div class="container">
     <main role="main" class="pb-3">
@@ -16,7 +16,7 @@
                             </div>
                             <div class="card-body text-center">
                                 <h2 class="mb-1 text-primary-color">@Model.Name</h2>
-                                <form asp-controller="Members" asp-action="EditMember" method="post">
+                                <form asp-controller="Member" asp-action="Edit" method="post">
                                     <div class="mt-4 text-start">
                                         <div class="row g-3">
                                             <div class="col-12">
@@ -61,7 +61,7 @@
 
 
                                     <div class="d-flex justify-content-between gap-2 mt-3 px-3 pb-3">
-                                        <a asp-controller="Members" asp-action="Index" class="btn btn-fill ">
+                                        <a asp-controller="Member" asp-action="Index" class="btn btn-fill ">
                                             Back to
                                             List
                                         </a>
@@ -83,4 +83,4 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-} *@
+}

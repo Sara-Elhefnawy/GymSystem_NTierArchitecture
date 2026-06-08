@@ -1,6 +1,6 @@
 ﻿namespace GymSystem.Domain.DTOs.Member;
 
-public class MemberIndexDTO
+public class IndexMemberDTO
 {
     public int Id { get; set; }
     public string Name { get; set; } = default!;

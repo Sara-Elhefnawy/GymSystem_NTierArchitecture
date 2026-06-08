@@ -2,8 +2,8 @@
 
 public class Membership : BaseEntity
 {
-    public DateTime StartDate { get; set; }
-    public DateTime EndDate { get; set; }  // StartDate + Plan.DurationDays
+    public DateOnly StartDate { get; set; }
+    public DateOnly EndDate { get; set; }  // StartDate + Plan.DurationDays
 
     // A member can have only ONE active membership at a time
     // Only active plans can be assigned

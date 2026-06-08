@@ -1,8 +1,10 @@
-﻿using GymSystem.Domain.DTOs.Member;
+﻿using GymSystem.Domain.DTOs.HealthRecord;
+using GymSystem.Domain.DTOs.Member;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
 using GymSystem.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
 
 namespace GymSystem.Domain.Services;
 
@@ -27,30 +29,26 @@ public class MemberService : IMemberService
 
             _logger.LogInformation("Creating member: {Name}, {Email}, {Phone}", name, email, phone);
 
-            // Check for existing email
-            if (await _members.ExistsAsync(m => m.Email == email, ct))
-            {
-                _logger.LogWarning("Email already exists: {Email}", email);
-                return false;
-            }
+            var age = CalculateAge(model.DateOfBirth);
+            if (age < 12 || age > 120)
+                return false; 
 
-            // Check for existing phone
-            if (await _members.ExistsAsync(m => m.Phone == phone, ct))
-            {
-                _logger.LogWarning("Phone already exists: {Phone}", phone);
+            if (!Regex.IsMatch(model.Name, @"^[a-zA-Z\s\-']+$"))
                 return false;
-            }
 
-            // Parse gender (string from UI to enum)
+            if (await IsEmailTakenAsync(model.Email, ct))
+                return false;
+
+            if (await IsPhoneTakenAsync(model.Phone, ct))
+                return false;
+
             if (!Enum.TryParse<Gender>(model.Gender, true, out var gender))
             {
                 _logger.LogWarning("Invalid gender value: {Gender}", model.Gender);
                 return false;
             }
 
-            // Parse blood type (string from UI to enum)
-            var bloodType = ParseBloodType(model.HealthRecord.BloodType);
-            if (bloodType == null)
+            if (!Enum.TryParse<BloodType>(model.HealthRecord.BloodType, true, out var bloodType))
             {
                 _logger.LogWarning("Invalid blood type value: {BloodType}", model.HealthRecord.BloodType);
                 return false;
@@ -65,7 +63,7 @@ public class MemberService : IMemberService
                 Phone = phone,
                 DateOfBirth = model.DateOfBirth,
                 Gender = gender,
-                JoinDate = DateTime.UtcNow,
+                JoinDate = DateOnly.FromDateTime(DateTime.UtcNow),
                 Address = new Address
                 {
                     BuildingNumber = model.BuildingNumber,
@@ -74,7 +72,7 @@ public class MemberService : IMemberService
                 },
                 HealthRecord = new HealthRecord
                 {
-                    BloodType = bloodType.Value,
+                    BloodType = bloodType,
                     Weight = model.HealthRecord.Weight,
                     Height = model.HealthRecord.Height,
                     Note = model.HealthRecord.Note?.Trim(),
@@ -98,10 +96,10 @@ public class MemberService : IMemberService
         }
     }
 
-    public async Task<IEnumerable<MemberIndexDTO>> GetAllAsync(CancellationToken ct = default)
+    public async Task<IEnumerable<IndexMemberDTO>> GetAllAsync(CancellationToken ct = default)
     {
         var items = await _members.GetAllAsync(ct);
-        return items.Select(m => new MemberIndexDTO
+        return items.Select(m => new IndexMemberDTO
         {
             Id = m.Id,
             Name = m.Name,
@@ -112,38 +110,138 @@ public class MemberService : IMemberService
         });
     }
 
-    private BloodType? ParseBloodType(string bloodTypeString)
+    public async Task<bool> IsEmailTakenAsync(string email, CancellationToken ct = default)
     {
-        // Try to parse as integer first (from dropdown)
-        if (int.TryParse(bloodTypeString, out int bloodTypeInt))
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+        return await _members.IsEmailTakenAsync(normalizedEmail, null, ct);
+    }
+
+    public async Task<bool> IsPhoneTakenAsync(string phone, CancellationToken ct = default)
+    {
+        var normalizedPhone = phone.Trim();
+        return await _members.IsPhoneTakenAsync(normalizedPhone, null, ct);
+    }
+
+    public async Task<DetailsMemberDTO?> GetDetailsAsync(int id, CancellationToken ct = default)
+    {
+        var member = await _members.GetWithDetailsAsync(id, ct);
+
+        if (member is null)
         {
-            return bloodTypeInt switch
-            {
-                1 => BloodType.A_Positive,
-                2 => BloodType.A_Negative,
-                3 => BloodType.B_Positive,
-                4 => BloodType.B_Negative,
-                5 => BloodType.AB_Positive,
-                6 => BloodType.AB_Negative,
-                7 => BloodType.O_Positive,
-                8 => BloodType.O_Negative,
-                _ => null
-            };
+            _logger.LogWarning("Member not found with ID: {Id}", id);
+            return null;
         }
 
-        // Then try string values
-        return bloodTypeString switch
+        var activeMembership = member.Memberships
+            .OrderByDescending(m => m.StartDate)
+            .FirstOrDefault();
+
+        return new DetailsMemberDTO
         {
-            "A+" => BloodType.A_Positive,
-            "A-" => BloodType.A_Negative,
-            "B+" => BloodType.B_Positive,
-            "B-" => BloodType.B_Negative,
-            "AB+" => BloodType.AB_Positive,
-            "AB-" => BloodType.AB_Negative,
-            "O+" => BloodType.O_Positive,
-            "O-" => BloodType.O_Negative,
-            _ => null
+            Id = member.Id,
+            Name = member.Name,
+            Photo = member.Photo,
+            Email = member.Email,
+            Phone = member.Phone,
+            Gender = member.Gender.ToString(),
+            DateOfBirth = member.DateOfBirth,
+            Address = $"{member.Address.BuildingNumber} - {member.Address.Street} - {member.Address.City}",
+            PlanName = activeMembership?.Plan?.Name ?? "—",
+            MembershipStartDate = activeMembership?.StartDate,
+            MembershipEndDate = activeMembership?.EndDate
+        };
+
+    }
+
+    public async Task<DetailsHealthRecordDTO?> GetHealthRecordAsync(int id, CancellationToken ct = default)
+    {
+        var member = await _members.GetWithHealthRecordAsync(id, trackChanges: false, ct: ct);
+
+        if (member?.HealthRecord is null)
+            return null;
+
+        var healthRecord = member.HealthRecord;
+        return new DetailsHealthRecordDTO
+        {
+            Height = healthRecord.Height,
+            Weight = healthRecord.Weight,
+            BloodType = healthRecord.BloodType.ToString(),
+            Notes = string.IsNullOrWhiteSpace(healthRecord.Note) ? "-" : healthRecord.Note
         };
     }
 
+    public async Task<EditMemberDTO?> GetForEditAsync(int id, CancellationToken ct = default)
+    {
+        var member = await _members.GetByIdAsync(id);
+        if (member is null) return null;
+
+        return new EditMemberDTO
+        {
+            Id = member.Id,
+            Name = member.Name,
+            Photo = member.Photo,
+            Email = member.Email,
+            Phone = member.Phone,
+            BuildingNumber = member.Address.BuildingNumber,
+            Street = member.Address.Street,
+            City = member.Address.City
+        };
+    }
+
+    public async Task<bool> UpdateAsync(EditMemberDTO dto, CancellationToken ct = default)
+    {
+        var member = await _members.GetByIdAsync(dto.Id);
+        if (member is null) return false;
+
+        if (await _members.IsEmailTakenAsync(dto.Email, dto.Id, ct)) return false;
+        if (await _members.IsPhoneTakenAsync(dto.Phone, dto.Id, ct)) return false;
+
+        member.Email = dto.Email;
+        member.Phone = dto.Phone;
+        member.Address = new Address
+        {
+            BuildingNumber = dto.BuildingNumber, 
+            Street = dto.Street, 
+            City = dto.City 
+        };
+
+        _members.Update(member, ct);
+        await _members.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<DeleteMemberDTO?> GetForDeleteAsync(int id, CancellationToken ct = default)
+    {
+        var member = await _members.GetByIdAsync(id, ct);
+
+        if (member is null) return null;
+
+        return new DeleteMemberDTO 
+        { 
+            Id = member.Id, 
+            Name = member.Name, 
+            Photo = member.Photo 
+        };
+    }
+
+    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var member = await _members.GetWithBookingsAsync(id, ct);
+        if (member is null) return false;
+
+        // Business rule: cannot delete if member has active bookings
+        //if (member.Bookings.Any(b => b.IsActive)) return false;
+
+        await _members.SoftDeleteAsync(member, ct);
+        await _members.SaveChangesAsync(ct);
+        return true;
+    }
+
+    private int CalculateAge(DateOnly dateOfBirth)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var age = today.Year - dateOfBirth.Year;
+        if (dateOfBirth > today.AddYears(-age)) age--;
+        return age;
+    }
 }
