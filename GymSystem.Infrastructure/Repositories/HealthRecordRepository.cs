@@ -3,6 +3,6 @@ using GymSystem.Infrastructure.Entities;
 
 namespace GymSystem.Infrastructure.Repositories;
 
-public class PlanRepository(GymAppDbContext dbContext) : Repository<Plan>(dbContext), IPlanRepository
+public class HealthRecordRepository(GymAppDbContext dbContext) : Repository<HealthRecord>(dbContext), IHealthRecordRepository
 {
 }

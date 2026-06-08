@@ -15,6 +15,6 @@ public class HealthRecord : BaseEntity
 
 
     public int MemberId { get; set; }
-    public Member Member { get; set; } = null!;
+    public Member Member { get; set; } = default!;
 
 }

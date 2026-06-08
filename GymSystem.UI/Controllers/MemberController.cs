@@ -1,6 +1,7 @@
 ﻿using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
 using GymSystem.Domain.Services;
+using GymSystem.UI.ViewModels.Member;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymSystem.UI.Controllers;
@@ -10,36 +11,57 @@ public class MemberController(IMemberService members) : Controller
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var items = await members.GetAllAsync(ct);
+        var dtos = await members.GetAllAsync(ct);
 
-        if (TempData["Success"] != null)
+        var viewModels = dtos.Select(m => new IndexMemberViewModel
         {
-            ViewBag.SuccessMessage = TempData["Success"].ToString();
-        }
-        if (TempData["Error"] != null)
-        {
-            ViewBag.ErrorMessage = TempData["Error"].ToString();
-        }
+            Id = m.Id,
+            Name = m.Name,
+            Email = m.Email,
+            Phone = m.Phone,
+            Photo = m.Photo,
+            Gender = m.Gender
+        }).ToList();
 
-        return View(items);
+        return View(viewModels);
+
     }
     [HttpGet]
     public IActionResult Create()
     {
-        return View(new CreateMemberDTO
+        return View(new CreateMemberViewModel
         {
-            HealthRecord = new CreateHealthRecordDTO()
+            HealthRecord = new CreateHealthRecordViewModel()
         });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CreateMemberDTO model, CancellationToken ct)
+    public async Task<IActionResult> Create(CreateMemberViewModel model, CancellationToken ct)
     {
         if (!ModelState.IsValid)
             return View(model);
 
-        var success = await members.CreateAsync(model, ct);
+        var dto = new CreateMemberDTO
+        {
+            Name = model.Name,
+            Email = model.Email,
+            Phone = model.Phone,
+            DateOfBirth = model.DateOfBirth,
+            Gender = model.Gender,
+            BuildingNumber = model.BuildingNumber,
+            City = model.City,
+            Street = model.Street,
+            HealthRecord = new CreateHealthRecordDTO
+            {
+                BloodType = model.HealthRecord.BloodType,
+                Height = model.HealthRecord.Height,
+                Weight = model.HealthRecord.Weight,
+                Note = model.HealthRecord.Note
+            }
+        };
+
+        var success = await members.CreateAsync(dto, ct);
 
         if (success)
         {
@@ -55,8 +77,28 @@ public class MemberController(IMemberService members) : Controller
     public async Task<IActionResult> Details(int id, CancellationToken ct)
     {
         var dto = await members.GetDetailsAsync(id, ct);
-        if (dto is null) return NotFound();
-        return View(dto);
+        if (dto is null)
+        {
+            TempData["Error"] = "Member not found.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var viewModel = new DetailsMemberViewModel
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            Email = dto.Email,
+            Phone = dto.Phone,
+            Photo = dto.Photo,
+            Gender = dto.Gender,
+            DateOfBirth = dto.DateOfBirth,
+            MembershipEndDate = dto.MembershipEndDate,
+            MembershipStartDate = dto.MembershipStartDate,
+            PlanName = dto.PlanName,
+            Address = dto.Address
+        };
+
+        return View(viewModel);
     }
 
     [HttpGet]
@@ -64,18 +106,33 @@ public class MemberController(IMemberService members) : Controller
     {
         var dto = await members.GetHealthRecordAsync(id, ct);
         if (dto is null) return NotFound();
-        return View(dto);
+
+        var viewModel = new DetailsHealthRecordViewModel
+        {
+            BloodType = dto.BloodType,
+            Height = dto.Height,
+            Weight = dto.Weight,
+            Notes = dto.Notes
+        };
+
+        return View(viewModel);
     }
     
     [HttpGet]
     public async Task<IActionResult> HealthRecordDetails(int id, CancellationToken ct)
     {
         var dto = await members.GetHealthRecordAsync(id, ct);
-        
-        if (dto is null)
-            return NotFound();
+        if (dto is null) return NotFound();
 
-        return View(dto);
+        var viewModel = new DetailsHealthRecordViewModel
+        {
+            BloodType = dto.BloodType,
+            Height = dto.Height,
+            Weight = dto.Weight,
+            Notes = dto.Notes
+        };
+
+        return View(viewModel);
     }
 
     [HttpGet]
@@ -83,20 +140,43 @@ public class MemberController(IMemberService members) : Controller
     {
         var dto = await members.GetForEditAsync(id, ct);
         if (dto is null) return NotFound();
-        return View(dto);
+
+        var viewModel = new EditMemberViewModel
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            Email = dto.Email,
+            Phone = dto.Phone,
+            BuildingNumber = dto.BuildingNumber,
+            City = dto.City,
+            Street = dto.Street
+        };
+
+        return View(viewModel);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(EditMemberDTO dto, CancellationToken ct)
+    public async Task<IActionResult> Edit(EditMemberViewModel model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(dto);
+        if (!ModelState.IsValid) return View(model);
+
+        var dto = new EditMemberDTO
+        {
+            Id = model.Id,
+            Name = model.Name,
+            Email = model.Email,
+            Phone = model.Phone,
+            BuildingNumber = model.BuildingNumber,
+            City = model.City,
+            Street = model.Street
+        };
 
         var success = await members.UpdateAsync(dto, ct);
         if (!success)
         {
             ModelState.AddModelError(string.Empty, "Email or phone already in use.");
-            return View(dto);
+            return View(model);
         }
 
         TempData["SuccessMessage"] = "Member updated successfully.";
@@ -107,7 +187,9 @@ public class MemberController(IMemberService members) : Controller
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var dto = await members.GetForDeleteAsync(id, ct);
+
         if (dto is null) return NotFound();
+
         return View(dto);
     }
 

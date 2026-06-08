@@ -2,7 +2,7 @@
 
 public class Category : BaseEntity
 {
-    public string CategoryName { get; set; } = null!;
+    public string Name { get; set; } = default!;
 
     public ICollection<Session> Sessions { get; set; } = [];
 }

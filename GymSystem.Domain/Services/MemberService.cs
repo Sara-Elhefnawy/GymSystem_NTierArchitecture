@@ -2,7 +2,7 @@
 using GymSystem.Domain.DTOs.Member;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
-using GymSystem.Infrastructure.Repositories;
+using GymSystem.Infrastructure.UnitOfWorks;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
@@ -10,12 +10,12 @@ namespace GymSystem.Domain.Services;
 
 public class MemberService : IMemberService
 {
-    private readonly IMemberRepository _members;
+    private readonly IUnitOfWork _uow;
     private readonly ILogger<MemberService> _logger;
 
-    public MemberService(IMemberRepository members, ILogger<MemberService> logger)
+    public MemberService(IUnitOfWork uow, ILogger<MemberService> logger)
     {
-        _members = members;
+        _uow = uow;
         _logger = logger;
     }
 
@@ -81,10 +81,10 @@ public class MemberService : IMemberService
             };
 
             _logger.LogInformation("Adding member to repository...");
-            await _members.AddAsync(member, ct);
+            await _uow.Members.AddAsync(member, ct);
 
             _logger.LogInformation("Saving changes to database...");
-            await _members.SaveChangesAsync(ct);
+            await _uow.Members.SaveChangesAsync(ct);
 
             _logger.LogInformation("Member created successfully!");
             return true;
@@ -98,7 +98,7 @@ public class MemberService : IMemberService
 
     public async Task<IEnumerable<IndexMemberDTO>> GetAllAsync(CancellationToken ct = default)
     {
-        var items = await _members.GetAllAsync(ct);
+        var items = await _uow.Members.GetAllAsync(ct);
         return items.Select(m => new IndexMemberDTO
         {
             Id = m.Id,
@@ -113,18 +113,18 @@ public class MemberService : IMemberService
     public async Task<bool> IsEmailTakenAsync(string email, CancellationToken ct = default)
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();
-        return await _members.IsEmailTakenAsync(normalizedEmail, null, ct);
+        return await _uow.Members.IsEmailTakenAsync(normalizedEmail, null, ct);
     }
 
     public async Task<bool> IsPhoneTakenAsync(string phone, CancellationToken ct = default)
     {
         var normalizedPhone = phone.Trim();
-        return await _members.IsPhoneTakenAsync(normalizedPhone, null, ct);
+        return await _uow.Members.IsPhoneTakenAsync(normalizedPhone, null, ct);
     }
 
     public async Task<DetailsMemberDTO?> GetDetailsAsync(int id, CancellationToken ct = default)
     {
-        var member = await _members.GetWithDetailsAsync(id, ct);
+        var member = await _uow.Members.GetWithDetailsAsync(id, ct);
 
         if (member is null)
         {
@@ -155,7 +155,7 @@ public class MemberService : IMemberService
 
     public async Task<DetailsHealthRecordDTO?> GetHealthRecordAsync(int id, CancellationToken ct = default)
     {
-        var member = await _members.GetWithHealthRecordAsync(id, trackChanges: false, ct: ct);
+        var member = await _uow.Members.GetWithHealthRecordAsync(id, trackChanges: false, ct: ct);
 
         if (member?.HealthRecord is null)
             return null;
@@ -166,13 +166,13 @@ public class MemberService : IMemberService
             Height = healthRecord.Height,
             Weight = healthRecord.Weight,
             BloodType = healthRecord.BloodType.ToString(),
-            Notes = string.IsNullOrWhiteSpace(healthRecord.Note) ? "-" : healthRecord.Note
+            Notes = string.IsNullOrWhiteSpace(healthRecord.Note) ? "No notes available" : healthRecord.Note
         };
     }
 
     public async Task<EditMemberDTO?> GetForEditAsync(int id, CancellationToken ct = default)
     {
-        var member = await _members.GetByIdAsync(id);
+        var member = await _uow.Members.GetByIdAsync(id);
         if (member is null) return null;
 
         return new EditMemberDTO
@@ -190,29 +190,37 @@ public class MemberService : IMemberService
 
     public async Task<bool> UpdateAsync(EditMemberDTO dto, CancellationToken ct = default)
     {
-        var member = await _members.GetByIdAsync(dto.Id);
+        var member = await _uow.Members.GetByIdAsync(dto.Id, ct);
         if (member is null) return false;
 
-        if (await _members.IsEmailTakenAsync(dto.Email, dto.Id, ct)) return false;
-        if (await _members.IsPhoneTakenAsync(dto.Phone, dto.Id, ct)) return false;
+        if (member.Email != dto.Email.Trim().ToLowerInvariant() && await IsEmailTakenAsync(dto.Email, ct))
+        {
+            throw new InvalidOperationException("Email is already taken.");
+        }
+
+        if (member.Phone != dto.Phone.Trim() && await IsPhoneTakenAsync(dto.Phone, ct))
+        {
+            throw new InvalidOperationException("Phone number is already taken.");
+        }
 
         member.Email = dto.Email;
         member.Phone = dto.Phone;
         member.Address = new Address
         {
-            BuildingNumber = dto.BuildingNumber, 
-            Street = dto.Street, 
-            City = dto.City 
+            BuildingNumber = dto.BuildingNumber,
+            Street = dto.Street,
+            City = dto.City
         };
 
-        _members.Update(member, ct);
-        await _members.SaveChangesAsync(ct);
+        _uow.Members.Update(member, ct);
+        await _uow.Members.SaveChangesAsync(ct);
+
         return true;
     }
 
     public async Task<DeleteMemberDTO?> GetForDeleteAsync(int id, CancellationToken ct = default)
     {
-        var member = await _members.GetByIdAsync(id, ct);
+        var member = await _uow.Members.GetByIdAsync(id, ct);
 
         if (member is null) return null;
 
@@ -226,14 +234,18 @@ public class MemberService : IMemberService
 
     public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
     {
-        var member = await _members.GetWithBookingsAsync(id, ct);
+        var member = await _uow.Members.GetWithBookingsAsync(id, ct);
         if (member is null) return false;
 
         // Business rule: cannot delete if member has active bookings
         //if (member.Bookings.Any(b => b.IsActive)) return false;
 
-        await _members.SoftDeleteAsync(member, ct);
-        await _members.SaveChangesAsync(ct);
+        await _uow.Members.SoftDeleteAsync(member, ct);
+        if (member.HealthRecord is not null)
+            await _uow.HealthRecords.SoftDeleteAsync(member.HealthRecord, ct);
+
+
+        await _uow.Members.SaveChangesAsync(ct);
         return true;
     }
 

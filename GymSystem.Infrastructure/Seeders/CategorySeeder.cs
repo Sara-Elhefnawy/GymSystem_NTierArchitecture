@@ -13,9 +13,9 @@ public static class CategorySeeder
 
         var categories = new List<Category>
             {
-                new() { CategoryName = "Cardio" },
-                new() { CategoryName = "Strength" },
-                new() { CategoryName = "Yoga" }
+                new() { Name = "Cardio" },
+                new() { Name = "Strength" },
+                new() { Name = "Yoga" }
             };
 
         await dbContext.Categories.AddRangeAsync(categories);
