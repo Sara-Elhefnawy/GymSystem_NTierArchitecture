@@ -234,11 +234,12 @@ public class MemberService : IMemberService
 
     public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
     {
-        var member = await _uow.Members.GetWithBookingsAsync(id, ct);
-        if (member is null) return false;
+        //var member = await _uow.Members.GetWithBookingsAsync(id, ct);
+        var member = await _uow.Members.GetByIdAsync(id, ct);
 
         // Business rule: cannot delete if member has active bookings
-        //if (member.Bookings.Any(b => b.IsActive)) return false;
+        if (await _uow.Bookings.GetWithDetailsAsync(id, DateTime.UtcNow, ct))
+            return false;
 
         await _uow.Members.SoftDeleteAsync(member, ct);
         if (member.HealthRecord is not null)

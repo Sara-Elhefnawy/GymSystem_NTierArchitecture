@@ -12,11 +12,11 @@ public interface IMemberService
     Task<bool> IsPhoneTakenAsync(string phone, CancellationToken ct = default);
 
     Task<DetailsMemberDTO?> GetDetailsAsync(int id, CancellationToken ct = default);
-    Task<DetailsHealthRecordDTO?> GetHealthRecordAsync( int id, CancellationToken ct = default);
+    Task<DetailsHealthRecordDTO?> GetHealthRecordAsync(int id, CancellationToken ct = default);
 
     Task<bool> UpdateAsync(EditMemberDTO dto, CancellationToken ct = default);
     Task<EditMemberDTO?> GetForEditAsync(int id, CancellationToken ct = default);
 
     Task<DeleteMemberDTO?> GetForDeleteAsync(int id, CancellationToken ct = default);
     Task<bool> DeleteAsync(int id, CancellationToken ct = default);
-    }
+}

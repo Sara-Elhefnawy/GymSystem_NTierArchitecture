@@ -12,5 +12,11 @@ public interface IUnitOfWork : IDisposable
 
     IHealthRecordRepository HealthRecords { get; }
 
-    Task<int> SaveChangesAsync();
+    IBookingRepository Bookings { get; }
+
+    ITrainerRepository Trainers { get; }
+
+    ICategoryRepository Categories { get; }
+
+    Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

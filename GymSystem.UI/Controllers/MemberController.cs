@@ -26,6 +26,7 @@ public class MemberController(IMemberService members) : Controller
         return View(viewModels);
 
     }
+
     [HttpGet]
     public IActionResult Create()
     {
@@ -143,7 +144,7 @@ public class MemberController(IMemberService members) : Controller
 
         var viewModel = new EditMemberViewModel
         {
-            Id = dto.Id,
+            Id = id,
             Name = dto.Name,
             Email = dto.Email,
             Phone = dto.Phone,
@@ -157,13 +158,13 @@ public class MemberController(IMemberService members) : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(EditMemberViewModel model, CancellationToken ct)
+    public async Task<IActionResult> Edit([FromRoute]int id,EditMemberViewModel model, CancellationToken ct)
     {
         if (!ModelState.IsValid) return View(model);
 
         var dto = new EditMemberDTO
         {
-            Id = model.Id,
+            Id = id,
             Name = model.Name,
             Email = model.Email,
             Phone = model.Phone,
@@ -190,13 +191,31 @@ public class MemberController(IMemberService members) : Controller
 
         if (dto is null) return NotFound();
 
-        return View(dto);
+        var viewModel = new DeleteMemberViewModel
+        {
+            Id = id,
+            Name = dto.Name,
+            Photo = dto.Photo
+        };
+
+        return View(viewModel);
     }
 
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
     {
+        var model = await members.GetForDeleteAsync(id, ct);
+
+        if (!ModelState.IsValid) return View(model);
+
+        var dto = new EditMemberDTO
+        {
+            Id = id,
+            Name = model.Name,
+            Photo = model.Photo
+        };
+
         var success = await members.DeleteAsync(id, ct);
 
         if (!success)
