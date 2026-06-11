@@ -1,4 +1,5 @@
-﻿using GymSystem.Domain.DTOs.Trainer;
+﻿using GymSystem.Domain.DTOs.Member;
+using GymSystem.Domain.DTOs.Trainer;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
 using GymSystem.Infrastructure.UnitOfWorks;
@@ -65,7 +66,7 @@ public class TrainerService : ITrainerService
                 return false;
             }
 
-            if (!Enum.TryParse<BloodType>(model.Specialties, true, out var speciality))
+            if (!Enum.TryParse<Specialty>(model.Specialties, true, out var speciality))
             {
                 _logger.LogWarning("Invalid speciality value: {Specialities}", model.Specialties);
                 return false;
@@ -86,7 +87,7 @@ public class TrainerService : ITrainerService
                     Street = model.Street.Trim(),
                     City = model.City.Trim()
                 },
-                
+                Specialty = speciality
             };
 
             _logger.LogInformation("Adding member to repository...");
@@ -105,6 +106,122 @@ public class TrainerService : ITrainerService
         }
     }
 
+    public async Task<DetailsTrainerDTO?> GetDetailsAsync(int id, CancellationToken ct = default)
+    {
+        var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
+
+        if (trainer is null)
+        {
+            _logger.LogWarning("Trainer not found with ID: {Id}", id);
+            return null;
+        }
+
+        return new DetailsTrainerDTO
+        {
+            Id = trainer.Id,
+            Name = trainer.Name,
+            Email = trainer.Email,
+            Phone = trainer.Phone,
+            Address = $"{trainer.Address.BuildingNumber} - {trainer.Address.Street} - {trainer.Address.City}",
+            Specialty = trainer.Specialty.ToString()
+        };
+    }
+
+    public async Task<EditTrainerDTO?> GetForEditAsync(int id, CancellationToken ct = default)
+    {
+        var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
+
+        if (trainer is null)
+        {
+            _logger.LogWarning("Trainer not found with ID: {Id}", id);
+            return null;
+        }
+
+        return new EditTrainerDTO
+        {
+            Id = trainer.Id,
+            Name = trainer.Name,
+            Email = trainer.Email,
+            Phone = trainer.Phone,
+            BuildingNumber = trainer.Address.BuildingNumber,
+            City = trainer.Address.City,
+            Street = trainer.Address.Street,
+            Specialty = trainer.Specialty.ToString()
+        };
+    }
+
+    public async Task<bool> UpdateAsync(EditTrainerDTO model, CancellationToken ct = default)
+    {
+        var trainer = await _uow.Trainers.GetByIdAsync(model.Id, ct);
+
+        if (trainer is null)
+        {
+            _logger.LogWarning("Trainer not found with ID: {Id}", model.Id);
+            return false;
+        }
+
+        if (!trainer.Email.Equals(model.Email.Trim(), StringComparison.InvariantCultureIgnoreCase) && await IsEmailTakenAsync(model.Email, ct))
+        {
+            throw new InvalidOperationException("Email is already taken.");
+        }
+
+        if (trainer.Phone != model.Phone.Trim() && await IsPhoneTakenAsync(model.Phone, ct))
+        {
+            throw new InvalidOperationException("Phone number is already taken.");
+        }
+
+        trainer.Address = new Address
+        {
+            BuildingNumber = model.BuildingNumber,
+            Street = model.Street,
+            City = model.City
+        };
+
+        if (!Enum.TryParse<Specialty>(model.Specialty, true, out var speciality))
+        {
+            _logger.LogWarning("Invalid speciality value: {Speciality}", model.Specialty);
+            return false;
+        }
+        trainer.Specialty = speciality;
+
+        _uow.Trainers.Update(trainer, ct);
+        await _uow.Trainers.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<DeleteTrainerDTO?> GetForDeleteAsync(int id, CancellationToken ct = default)
+    {
+        var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
+
+        if (trainer is null) return null;
+
+        return new DeleteTrainerDTO
+        {
+            Id = trainer.Id,
+            Name = trainer.Name
+        };
+    }
+
+    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
+
+        if (trainer is null)
+        {
+            _logger.LogWarning("Trainer not found with ID: {Id}", id);
+            return false;
+        }
+
+        if (await _uow.Sessions.HasUpcomingSessionsForTrainerAsync(id, DateTime.UtcNow, ct))
+        {
+            _logger.LogWarning("Cannot delete trainer with ID: {Id} because they have upcoming sessions", id);
+            return false;
+        }
+
+        await _uow.Trainers.SoftDeleteAsync(trainer, ct);
+        await _uow.Trainers.SaveChangesAsync(ct);
+        return true;
+    }
 
     public async Task<bool> IsEmailTakenAsync(string email, CancellationToken ct = default)
     {

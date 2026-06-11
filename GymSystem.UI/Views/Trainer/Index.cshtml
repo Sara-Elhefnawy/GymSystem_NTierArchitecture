@@ -43,21 +43,21 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-start" aria-labelledby="dropdownMenuButton-@trainer.Id">
                                         <li>
-                                            <a asp-controller="Trainers" asp-action="Details" asp-route-Id="@trainer.Id" class="dropdown-item d-flex align-items-center gap-3">
+                                            <a asp-controller="Trainer" asp-action="Details" asp-route-Id="@trainer.Id" class="dropdown-item d-flex align-items-center gap-3">
                                                 <i class="bi bi-eye text-primary-color"></i>
                                                 <span>View Details</span>
                                             </a>
                                         </li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <a asp-controller="Trainers" asp-action="Edit" asp-route-Id="@trainer.Id" class="dropdown-item d-flex align-items-center gap-3">
+                                            <a asp-controller="Trainer" asp-action="Edit" asp-route-Id="@trainer.Id" class="dropdown-item d-flex align-items-center gap-3">
                                                 <i class="bi bi-pencil text-primary-color"></i>
                                                 <span>Edit Details</span>
                                             </a>
                                         </li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <a asp-controller="Trainers" asp-action="Delete" asp-route-Id="@trainer.Id" class="dropdown-item d-flex align-items-center gap-3 text-danger">
+                                            <a asp-controller="Trainer" asp-action="Delete" asp-route-Id="@trainer.Id" class="dropdown-item d-flex align-items-center gap-3 text-danger">
                                                 <i class="bi bi-trash"></i>
                                                 <span>Delete</span>
                                             </a>

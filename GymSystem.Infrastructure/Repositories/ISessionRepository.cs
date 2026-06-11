@@ -4,5 +4,7 @@ namespace GymSystem.Infrastructure.Repositories;
 
 public interface ISessionRepository : IRepository<Session>
 {
+    Task<bool> HasUpcomingSessionsForTrainerAsync(int trainerId, DateTime utcNow, CancellationToken ct = default);
+
     Task<IReadOnlyList<Session>> GetAllWithDetailsAsync(CancellationToken ct = default);
 }

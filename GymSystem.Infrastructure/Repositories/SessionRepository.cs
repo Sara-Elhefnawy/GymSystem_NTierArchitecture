@@ -15,4 +15,9 @@ public class SessionRepository(GymAppDbContext dbContext) : Repository<Session>(
             .Include(s => s.Bookings)
             .AsNoTracking()
             .ToListAsync(ct);
+
+    public async Task<bool> HasUpcomingSessionsForTrainerAsync(int trainerId, DateTime utcNow, CancellationToken ct = default)
+        => await _dbContext.Sessions
+            .AnyAsync(s => s.TrainerId == trainerId && s.EndDate >= utcNow, ct);
+
 }
