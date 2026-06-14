@@ -1,11 +1,19 @@
 ﻿using GymSystem.Domain.DTOs.Session;
 using GymSystem.Infrastructure.UnitOfWorks;
+using Microsoft.Extensions.Logging;
 
 namespace GymSystem.Domain.Services;
 
-public class SessionService(IUnitOfWork uow) : ISessionService
+public class SessionService : ISessionService
 {
-    private readonly IUnitOfWork _uow = uow;
+    private readonly IUnitOfWork _uow;
+    private readonly ILogger<SessionService> _logger;
+
+    public SessionService(IUnitOfWork uow, ILogger<SessionService> logger)
+    {
+        _uow = uow;
+        _logger = logger;
+    }
 
     public async Task<IReadOnlyList<IndexSessionDTO>> GetAllAsync(CancellationToken ct = default)
     {

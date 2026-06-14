@@ -1,8 +1,8 @@
-﻿@* @{
+﻿@{
     var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     string Active(string name) =>
         string.Equals(controller, name, StringComparison.OrdinalIgnoreCase) ? "active" : "";
-} *@
+}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -147,6 +147,9 @@
             </div>
         </div>
     </footer>
+
+    @* Include toast messages *@
+    @await Html.PartialAsync("_ToastMessages")
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

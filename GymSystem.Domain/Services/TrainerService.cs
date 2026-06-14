@@ -1,4 +1,5 @@
-﻿using GymSystem.Domain.DTOs.Member;
+﻿using GymSystem.Domain.Common;
+using GymSystem.Domain.DTOs.Member;
 using GymSystem.Domain.DTOs.Trainer;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
@@ -11,33 +12,41 @@ namespace GymSystem.Domain.Services;
 public class TrainerService : ITrainerService
 {
     private readonly IUnitOfWork _uow;
-    private readonly ILogger<MemberService> _logger;
+    private readonly ILogger<TrainerService> _logger;
 
-    public TrainerService(IUnitOfWork uow, ILogger<MemberService> logger)
+    public TrainerService(IUnitOfWork uow, ILogger<TrainerService> logger)
     {
         _uow = uow;
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<IndexTrainerDTO>> GetAllAsync(CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<IndexTrainerDTO>>> GetAllAsync(CancellationToken ct = default)
     {
-        var trainers = await _uow.Trainers.GetAllAsync(ct);
-
-        var dtoList = trainers.Select(trainers => {
-            return new IndexTrainerDTO
+        try
+        {
+            var trainers = await _uow.Trainers.GetAllAsync(ct);
+            var dtoList = trainers.Select(trainers => 
             {
-                Id = trainers.Id,
-                Name = trainers.Name,
-                Email = trainers.Email,
-                Phone = trainers.Phone,
-                Specialties = trainers.Specialty.ToString()
-            };
-        }).ToList();
+                return new IndexTrainerDTO
+                {
+                    Id = trainers.Id,
+                    Name = trainers.Name,
+                    Email = trainers.Email,
+                    Phone = trainers.Phone,
+                    Specialties = trainers.Specialty.ToString()
+                };
+            }).ToList();
 
-        return dtoList;
+        return Result.Ok<IReadOnlyList<IndexTrainerDTO>>(dtoList);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all trainers");
+            return Result.Fail<IReadOnlyList<IndexTrainerDTO>>("Failed to retrieve trainers", "DATABASE_ERROR");
+        }
     }
 
-    public async Task<bool> CreateAsync(CreateTrainerDTO model, CancellationToken ct = default)
+    public async Task<Result> CreateAsync(CreateTrainerDTO model, CancellationToken ct = default)
     {
         try
         {
@@ -45,34 +54,26 @@ public class TrainerService : ITrainerService
             var phone = model.Phone.Trim().ToLowerInvariant();
             var name = model.Name.Trim();
 
-            _logger.LogInformation("Creating member: {Name}, {Email}, {Phone}", name, email, phone);
-
             var age = CalculateAge(model.DateOfBirth);
             if (age < 12 || age > 120)
-                return false;
+                return Result.Fail("Age must be between 12 and 120", "INVALID_AGE");
 
             if (!Regex.IsMatch(model.Name, @"^[a-zA-Z\s\-']+$"))
-                return false;
+                return Result.Fail("Name contains invalid characters", "INVALID_NAME");
 
-            if (await IsEmailTakenAsync(model.Email, ct))
-                return false;
+            var emailCheck = await IsEmailTakenAsync(model.Email, ct);
+            if (emailCheck.IsSuccess && emailCheck.Value)
+                return Result.Fail("Email is already taken", "EMAIL_TAKEN");
 
-            if (await IsPhoneTakenAsync(model.Phone, ct))
-                return false;
+            var phoneCheck = await IsPhoneTakenAsync(model.Phone, ct);
+            if (phoneCheck.IsSuccess && phoneCheck.Value)
+                return Result.Fail("Phone number is already taken", "PHONE_TAKEN");
 
             if (!Enum.TryParse<Gender>(model.Gender, true, out var gender))
-            {
-                _logger.LogWarning("Invalid gender value: {Gender}", model.Gender);
-                return false;
-            }
+                return Result.Fail("Invalid gender value", "INVALID_GENDER");
 
             if (!Enum.TryParse<Specialty>(model.Specialties, true, out var speciality))
-            {
-                _logger.LogWarning("Invalid speciality value: {Specialities}", model.Specialties);
-                return false;
-            }
-
-            _logger.LogInformation("Creating trainer object...");
+                return Result.Fail("Invalid blood type value", "INVALID_BLOOD_TYPE");
 
             var trainer = new Trainer
             {
@@ -90,33 +91,32 @@ public class TrainerService : ITrainerService
                 Specialty = speciality
             };
 
-            _logger.LogInformation("Adding member to repository...");
             await _uow.Trainers.AddAsync(trainer, ct);
-
-            _logger.LogInformation("Saving changes to database...");
             await _uow.Trainers.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Trainer created successfully!");
-            return true;
+            _logger.LogInformation("Trainer created successfullywith ID: {Id}", trainer.Id);
+            return Result.Ok();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating member");
-            return false;
+            _logger.LogError(ex, "Error creating trainer");
+            return Result.Fail("An unexpected error occurred", "INTERNAL_ERROR");
         }
     }
 
-    public async Task<DetailsTrainerDTO?> GetDetailsAsync(int id, CancellationToken ct = default)
+    public async Task<Result<DetailsTrainerDTO>> GetDetailsAsync(int id, CancellationToken ct = default)
     {
-        var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
+        try
+        {
+            var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
 
         if (trainer is null)
         {
             _logger.LogWarning("Trainer not found with ID: {Id}", id);
-            return null;
+            return Result.Fail<DetailsTrainerDTO>("Trainer not found", "TRAINER_NOT_FOUND");
         }
 
-        return new DetailsTrainerDTO
+        var dto = new DetailsTrainerDTO
         {
             Id = trainer.Id,
             Name = trainer.Name,
@@ -125,22 +125,31 @@ public class TrainerService : ITrainerService
             Address = $"{trainer.Address.BuildingNumber} - {trainer.Address.Street} - {trainer.Address.City}",
             Specialty = trainer.Specialty.ToString()
         };
+
+        return Result.Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting trainer details for ID: {Id}", id);
+            return Result.Fail<DetailsTrainerDTO>("Failed to retrieve trainer details", "DATABASE_ERROR");
+        }
     }
 
-    public async Task<EditTrainerDTO?> GetForEditAsync(int id, CancellationToken ct = default)
+    public async Task<Result<EditTrainerDTO>> GetForEditAsync(int id, CancellationToken ct = default)
     {
-        var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
+        try
+        {
+            var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
 
         if (trainer is null)
         {
             _logger.LogWarning("Trainer not found with ID: {Id}", id);
-            return null;
+            return Result.Fail<EditTrainerDTO>("Trainer not found", "TRAINER_NOT_FOUND");
         }
 
-        return new EditTrainerDTO
+        var dto = new EditTrainerDTO
         {
             Id = trainer.Id,
-            Name = trainer.Name,
             Email = trainer.Email,
             Phone = trainer.Phone,
             BuildingNumber = trainer.Address.BuildingNumber,
@@ -148,28 +157,46 @@ public class TrainerService : ITrainerService
             Street = trainer.Address.Street,
             Specialty = trainer.Specialty.ToString()
         };
+
+        return Result.Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting trainer for edit, ID: {Id}", id);
+            return Result.Fail<EditTrainerDTO>("Failed to retrieve trainer data", "DATABASE_ERROR");
+        }
     }
 
-    public async Task<bool> UpdateAsync(EditTrainerDTO model, CancellationToken ct = default)
+    public async Task<Result> UpdateAsync(EditTrainerDTO model, CancellationToken ct = default)
     {
-        var trainer = await _uow.Trainers.GetByIdAsync(model.Id, ct);
+        try
+        {
+            var trainer = await _uow.Trainers.GetByIdAsync(model.Id, ct);
 
         if (trainer is null)
         {
             _logger.LogWarning("Trainer not found with ID: {Id}", model.Id);
-            return false;
+            return Result.Fail("Trainer not found", "TRAINER_NOT_FOUND");
         }
 
-        if (!trainer.Email.Equals(model.Email.Trim(), StringComparison.InvariantCultureIgnoreCase) && await IsEmailTakenAsync(model.Email, ct))
+        // Only check email if it has changed
+        if (trainer.Email != model.Email.Trim().ToLowerInvariant())
         {
-            throw new InvalidOperationException("Email is already taken.");
+            var emailCheck = await IsEmailTakenAsync(model.Email, ct);
+            if (emailCheck.IsSuccess && emailCheck.Value)
+                return Result.Fail("Email is already taken", "EMAIL_TAKEN");
         }
 
-        if (trainer.Phone != model.Phone.Trim() && await IsPhoneTakenAsync(model.Phone, ct))
+        // Only check phone if it has changed
+        if (trainer.Phone != model.Phone.Trim())
         {
-            throw new InvalidOperationException("Phone number is already taken.");
+            var phoneCheck = await IsPhoneTakenAsync(model.Phone, ct);
+            if (phoneCheck.IsSuccess && phoneCheck.Value)
+                return Result.Fail("Phone number is already taken", "PHONE_TAKEN");
         }
 
+        trainer.Email = model.Email.Trim().ToLowerInvariant();
+        trainer.Phone = model.Phone.Trim();
         trainer.Address = new Address
         {
             BuildingNumber = model.BuildingNumber,
@@ -180,59 +207,109 @@ public class TrainerService : ITrainerService
         if (!Enum.TryParse<Specialty>(model.Specialty, true, out var speciality))
         {
             _logger.LogWarning("Invalid speciality value: {Speciality}", model.Specialty);
-            return false;
+            return Result.Fail("Invalid speciality value: {Speciality}", model.Specialty);
         }
         trainer.Specialty = speciality;
 
         _uow.Trainers.Update(trainer, ct);
         await _uow.Trainers.SaveChangesAsync(ct);
-        return true;
-    }
 
-    public async Task<DeleteTrainerDTO?> GetForDeleteAsync(int id, CancellationToken ct = default)
-    {
-        var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
-
-        if (trainer is null) return null;
-
-        return new DeleteTrainerDTO
+        _logger.LogInformation("Trainer updated successfully");
+        return Result.Ok();
+        }
+        catch (Exception ex)
         {
-            Id = trainer.Id,
-            Name = trainer.Name
-        };
+            _logger.LogError(ex, "Error updating trainer {Id}", model.Id);
+            return Result.Fail("Failed to update trainer", "UPDATE_ERROR");
+        }
     }
 
-    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
+    public async Task<Result<DeleteTrainerDTO>> GetForDeleteAsync(int id, CancellationToken ct = default)
     {
-        var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
+        try
+        {
+            var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
 
         if (trainer is null)
         {
             _logger.LogWarning("Trainer not found with ID: {Id}", id);
-            return false;
+            return Result.Fail<DeleteTrainerDTO>("Trainer not found", "TRAINER_NOT_FOUND");
+        }
+
+        var dto = new DeleteTrainerDTO
+        {
+            Id = trainer.Id,
+            Name = trainer.Name
+        };
+
+        return Result.Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting trainer for delete, ID: {Id}", id);
+            return Result.Fail<DeleteTrainerDTO>("Failed to retrieve trainer data", "DATABASE_ERROR");
+        }
+    }
+
+    public async Task<Result> DeleteAsync(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            var trainer = await _uow.Trainers.GetByIdAsync(id, ct);
+
+        if (trainer is null)
+        {
+            _logger.LogWarning("Trainer not found with ID: {Id}", id);
+            return Result.Fail("Trainer not found", "TRAINER_NOT_FOUND");
         }
 
         if (await _uow.Sessions.HasUpcomingSessionsForTrainerAsync(id, DateTime.UtcNow, ct))
         {
             _logger.LogWarning("Cannot delete trainer with ID: {Id} because they have upcoming sessions", id);
-            return false;
+            return Result.Fail("Cannot delete trainer with upcoming sessions", "UPCOMING_SESSIONS_EXIST");
         }
 
         await _uow.Trainers.SoftDeleteAsync(trainer, ct);
         await _uow.Trainers.SaveChangesAsync(ct);
-        return true;
+
+        _logger.LogInformation("TRAINER {Id} deleted successfully", id);
+        return Result.Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting trainer {Id}", id);
+            return Result.Fail("Failed to delete trainer", "DELETE_ERROR");
+        }
     }
 
-    public async Task<bool> IsEmailTakenAsync(string email, CancellationToken ct = default)
+    public async Task<Result<bool>> IsEmailTakenAsync(string email, CancellationToken ct = default)
     {
-        var normalizedEmail = email.Trim().ToLowerInvariant();
-        return await _uow.Trainers.IsEmailTakenAsync(normalizedEmail, null, ct);
+        try
+        {
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            var isTaken = await _uow.Trainers.IsEmailTakenAsync(normalizedEmail, null, ct);
+            return Result.Ok(isTaken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking email: {Email}", email);
+            return Result.Fail<bool>("Failed to check email availability", "DATABASE_ERROR");
+        }
     }
 
-    public async Task<bool> IsPhoneTakenAsync(string phone, CancellationToken ct = default)
+    public async Task<Result<bool>> IsPhoneTakenAsync(string phone, CancellationToken ct = default)
     {
-        var normalizedPhone = phone.Trim();
-        return await _uow.Trainers.IsPhoneTakenAsync(normalizedPhone, null, ct);
+        try
+        {
+            var normalizedPhone = phone.Trim();
+            var isTaken = await _uow.Trainers.IsPhoneTakenAsync(normalizedPhone, null, ct);
+            return Result.Ok(isTaken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking phone: {Phone}", phone);
+            return Result.Fail<bool>("Failed to check phone availability", "DATABASE_ERROR");
+        }
     }
 
     private int CalculateAge(DateOnly dateOfBirth)

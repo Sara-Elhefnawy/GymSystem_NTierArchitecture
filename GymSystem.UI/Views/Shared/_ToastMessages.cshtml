@@ -1,0 +1,96 @@
+﻿<!-- _ToastMessages.cshtml -->
+@if (TempData["Success"] != null)
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+        <div class="toast show text-bg-success border-0" role="alert" data-bs-autohide="true" data-bs-delay="3000">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                @TempData["Success"]  @* This should have text *@
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["Warning"] != null)
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+        <div class="toast show text-bg-warning border-0" role="alert" data-bs-autohide="true" data-bs-delay="5000">
+            <div class="toast-header bg-warning text-dark">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong class="me-auto">Warning</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                @TempData["Warning"]  @* This should have text *@
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+        <div class="toast show text-bg-danger border-0" role="alert" data-bs-autohide="true" data-bs-delay="5000">
+            <div class="toast-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                @TempData["Error"]  @* This should have text *@
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    function showToastWithFade(element, duration = 4000) {
+        // Show the toast
+        var toast = new bootstrap.Toast(element, {
+            autohide: false  // Don't auto-hide, we'll handle it
+        });
+
+        toast.show();
+
+        // Start with full opacity
+        element.style.opacity = '1';
+
+        // Set timeout to start fading
+        var fadeTimeout = setTimeout(function() {
+            // Gradually reduce opacity
+            var startTime = null;
+            var fadeDuration = 1000; // 1 second fade
+
+            function animateFade(timestamp) {
+                if (!startTime) startTime = timestamp;
+                var elapsed = timestamp - startTime;
+                var progress = Math.min(elapsed / fadeDuration, 1);
+
+                // Calculate opacity (1 to 0)
+                var opacity = 1 - progress;
+                element.style.opacity = opacity;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateFade);
+                } else {
+                    // Hide the toast completely after fade
+                    toast.hide();
+                }
+            }
+
+            requestAnimationFrame(animateFade);
+        }, duration - 1000); // Start fading 1 second before hide
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var toastElements = document.querySelectorAll('.toast');
+        toastElements.forEach(function(toastEl) {
+            var delay = parseInt(toastEl.getAttribute('data-bs-delay')) || 4000;
+            showToastWithFade(toastEl, delay);
+        });
+    });
+</script>

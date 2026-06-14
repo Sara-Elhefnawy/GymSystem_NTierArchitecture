@@ -5,8 +5,6 @@ namespace GymSystem.Domain.DTOs.Member;
 public class EditMemberDTO
 {
     public int Id { get; set; }
-    public string Name { get; set; } = default!;
-    public string? Photo { get; set; }
 
     [Required]
     [EmailAddress]

@@ -5,7 +5,6 @@ namespace GymSystem.Domain.DTOs.Trainer;
 public class EditTrainerDTO
 {
     public int Id { get; set; }
-    public string Name { get; set; } = default!;
 
     [EmailAddress]
     public string Email { get; set; } = default!;

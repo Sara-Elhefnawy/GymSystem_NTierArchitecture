@@ -1,4 +1,5 @@
-﻿using GymSystem.Domain.DTOs.HealthRecord;
+﻿using GymSystem.Domain.Common;
+using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
@@ -19,42 +20,61 @@ public class MemberService : IMemberService
         _logger = logger;
     }
 
-    public async Task<bool> CreateAsync(CreateMemberDTO model, CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<IndexMemberDTO>>> GetAllAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var items = await _uow.Members.GetAllAsync(ct);
+            var dtos = items.Select(m =>
+            {
+                return new IndexMemberDTO
+                {
+                    Id = m.Id,
+                    Name = m.Name,
+                    Email = m.Email,
+                    Phone = m.Phone,
+                    Photo = m.Photo,
+                    Gender = m.Gender.ToString()
+                };
+            }).ToList();
+
+            return Result.Ok<IReadOnlyList<IndexMemberDTO>>(dtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all members");
+            return Result.Fail<IReadOnlyList<IndexMemberDTO>>("Failed to retrieve members", "DATABASE_ERROR");
+        }
+    }
+
+    public async Task<Result> CreateAsync(CreateMemberDTO model, CancellationToken ct = default)
     {
         try
         {
             var email = model.Email.Trim().ToLowerInvariant();
-            var phone = model.Phone.Trim().ToLowerInvariant();
+            var phone = model.Phone.Trim();
             var name = model.Name.Trim();
-
-            _logger.LogInformation("Creating member: {Name}, {Email}, {Phone}", name, email, phone);
 
             var age = CalculateAge(model.DateOfBirth);
             if (age < 12 || age > 120)
-                return false; 
+                return Result.Fail("Age must be between 12 and 120", "INVALID_AGE");
 
             if (!Regex.IsMatch(model.Name, @"^[a-zA-Z\s\-']+$"))
-                return false;
+                return Result.Fail("Name contains invalid characters", "INVALID_NAME");
 
-            if (await IsEmailTakenAsync(model.Email, ct))
-                return false;
+            var emailCheck = await IsEmailTakenAsync(model.Email, ct);
+            if (emailCheck.IsSuccess && emailCheck.Value)
+                return Result.Fail("Email is already taken", "EMAIL_TAKEN");
 
-            if (await IsPhoneTakenAsync(model.Phone, ct))
-                return false;
+            var phoneCheck = await IsPhoneTakenAsync(model.Phone, ct);
+            if (phoneCheck.IsSuccess && phoneCheck.Value)
+                return Result.Fail("Phone number is already taken", "PHONE_TAKEN");
 
             if (!Enum.TryParse<Gender>(model.Gender, true, out var gender))
-            {
-                _logger.LogWarning("Invalid gender value: {Gender}", model.Gender);
-                return false;
-            }
+                return Result.Fail("Invalid gender value", "INVALID_GENDER");
 
             if (!Enum.TryParse<BloodType>(model.HealthRecord.BloodType, true, out var bloodType))
-            {
-                _logger.LogWarning("Invalid blood type value: {BloodType}", model.HealthRecord.BloodType);
-                return false;
-            }
-
-            _logger.LogInformation("Creating member object...");
+                return Result.Fail("Invalid blood type value", "INVALID_BLOOD_TYPE");
 
             var member = new Member
             {
@@ -80,174 +100,257 @@ public class MemberService : IMemberService
                 }
             };
 
-            _logger.LogInformation("Adding member to repository...");
             await _uow.Members.AddAsync(member, ct);
-
-            _logger.LogInformation("Saving changes to database...");
             await _uow.Members.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Member created successfully!");
-            return true;
+            _logger.LogInformation("Member created successfully with ID: {Id}", member.Id);
+            return Result.Ok();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating member");
-            return false;
+            return Result.Fail("An unexpected error occurred", "INTERNAL_ERROR");
         }
     }
 
-    public async Task<IEnumerable<IndexMemberDTO>> GetAllAsync(CancellationToken ct = default)
+    public async Task<Result<bool>> IsEmailTakenAsync(string email, CancellationToken ct = default)
     {
-        var items = await _uow.Members.GetAllAsync(ct);
-        return items.Select(m => new IndexMemberDTO
+        try
         {
-            Id = m.Id,
-            Name = m.Name,
-            Email = m.Email,
-            Phone = m.Phone,
-            Photo = m.Photo,
-            Gender = m.Gender.ToString()
-        });
-    }
-
-    public async Task<bool> IsEmailTakenAsync(string email, CancellationToken ct = default)
-    {
-        var normalizedEmail = email.Trim().ToLowerInvariant();
-        return await _uow.Members.IsEmailTakenAsync(normalizedEmail, null, ct);
-    }
-
-    public async Task<bool> IsPhoneTakenAsync(string phone, CancellationToken ct = default)
-    {
-        var normalizedPhone = phone.Trim();
-        return await _uow.Members.IsPhoneTakenAsync(normalizedPhone, null, ct);
-    }
-
-    public async Task<DetailsMemberDTO?> GetDetailsAsync(int id, CancellationToken ct = default)
-    {
-        var member = await _uow.Members.GetWithDetailsAsync(id, ct);
-
-        if (member is null)
-        {
-            _logger.LogWarning("Member not found with ID: {Id}", id);
-            return null;
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            var isTaken = await _uow.Members.IsEmailTakenAsync(normalizedEmail, null, ct);
+            return Result.Ok(isTaken);
         }
-
-        var activeMembership = member.Memberships
-            .OrderByDescending(m => m.StartDate)
-            .FirstOrDefault();
-
-        return new DetailsMemberDTO
+        catch (Exception ex)
         {
-            Id = member.Id,
-            Name = member.Name,
-            Photo = member.Photo,
-            Email = member.Email,
-            Phone = member.Phone,
-            Gender = member.Gender.ToString(),
-            DateOfBirth = member.DateOfBirth,
-            Address = $"{member.Address.BuildingNumber} - {member.Address.Street} - {member.Address.City}",
-            PlanName = activeMembership?.Plan?.Name ?? "—",
-            MembershipStartDate = activeMembership?.StartDate,
-            MembershipEndDate = activeMembership?.EndDate
-        };
-
-    }
-
-    public async Task<DetailsHealthRecordDTO?> GetHealthRecordAsync(int id, CancellationToken ct = default)
-    {
-        var member = await _uow.Members.GetWithHealthRecordAsync(id, trackChanges: false, ct: ct);
-
-        if (member?.HealthRecord is null)
-            return null;
-
-        var healthRecord = member.HealthRecord;
-        return new DetailsHealthRecordDTO
-        {
-            Height = healthRecord.Height,
-            Weight = healthRecord.Weight,
-            BloodType = healthRecord.BloodType.ToString(),
-            Notes = string.IsNullOrWhiteSpace(healthRecord.Note) ? "No notes available" : healthRecord.Note
-        };
-    }
-
-    public async Task<EditMemberDTO?> GetForEditAsync(int id, CancellationToken ct = default)
-    {
-        var member = await _uow.Members.GetByIdAsync(id);
-        if (member is null) return null;
-
-        return new EditMemberDTO
-        {
-            Id = member.Id,
-            Name = member.Name,
-            Photo = member.Photo,
-            Email = member.Email,
-            Phone = member.Phone,
-            BuildingNumber = member.Address.BuildingNumber,
-            Street = member.Address.Street,
-            City = member.Address.City
-        };
-    }
-
-    public async Task<bool> UpdateAsync(EditMemberDTO dto, CancellationToken ct = default)
-    {
-        var member = await _uow.Members.GetByIdAsync(dto.Id, ct);
-        if (member is null) return false;
-
-        if (member.Email != dto.Email.Trim().ToLowerInvariant() && await IsEmailTakenAsync(dto.Email, ct))
-        {
-            throw new InvalidOperationException("Email is already taken.");
+            _logger.LogError(ex, "Error checking email: {Email}", email);
+            return Result.Fail<bool>("Failed to check email availability", "DATABASE_ERROR");
         }
+    }
 
-        if (member.Phone != dto.Phone.Trim() && await IsPhoneTakenAsync(dto.Phone, ct))
+    public async Task<Result<bool>> IsPhoneTakenAsync(string phone, CancellationToken ct = default)
+    {
+        try
         {
-            throw new InvalidOperationException("Phone number is already taken.");
+            var normalizedPhone = phone.Trim();
+            var isTaken = await _uow.Members.IsPhoneTakenAsync(normalizedPhone, null, ct);
+            return Result.Ok(isTaken);
         }
-
-        member.Email = dto.Email;
-        member.Phone = dto.Phone;
-        member.Address = new Address
+        catch (Exception ex)
         {
-            BuildingNumber = dto.BuildingNumber,
-            Street = dto.Street,
-            City = dto.City
-        };
-
-        _uow.Members.Update(member, ct);
-        await _uow.Members.SaveChangesAsync(ct);
-
-        return true;
+            _logger.LogError(ex, "Error checking phone: {Phone}", phone);
+            return Result.Fail<bool>("Failed to check phone availability", "DATABASE_ERROR");
+        }
     }
 
-    public async Task<DeleteMemberDTO?> GetForDeleteAsync(int id, CancellationToken ct = default)
+    public async Task<Result<DetailsMemberDTO>> GetDetailsAsync(int id, CancellationToken ct = default)
     {
-        var member = await _uow.Members.GetByIdAsync(id, ct);
+        try
+        {
+            var member = await _uow.Members.GetWithDetailsAsync(id, ct);
 
-        if (member is null) return null;
+            if (member is null)
+            {
+                _logger.LogWarning("Member not found with ID: {Id}", id);
+                return Result.Fail<DetailsMemberDTO>("Member not found", "MEMBER_NOT_FOUND");
+            }
 
-        return new DeleteMemberDTO 
-        { 
-            Id = member.Id, 
-            Name = member.Name, 
-            Photo = member.Photo 
-        };
+            var activeMembership = member.Memberships
+                .OrderByDescending(m => m.StartDate)
+                .FirstOrDefault();
+
+            var dto = new DetailsMemberDTO
+            {
+                Id = member.Id,
+                Name = member.Name,
+                Photo = member.Photo,
+                Email = member.Email,
+                Phone = member.Phone,
+                Gender = member.Gender.ToString(),
+                DateOfBirth = member.DateOfBirth,
+                Address = $"{member.Address.BuildingNumber} - {member.Address.Street} - {member.Address.City}",
+                PlanName = activeMembership?.Plan?.Name ?? "—",
+                MembershipStartDate = activeMembership?.StartDate,
+                MembershipEndDate = activeMembership?.EndDate
+            };
+
+            return Result.Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting member details for ID: {Id}", id);
+            return Result.Fail<DetailsMemberDTO>("Failed to retrieve member details", "DATABASE_ERROR");
+        }
     }
 
-    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
+    public async Task<Result<DetailsHealthRecordDTO>> GetHealthRecordAsync(int id, CancellationToken ct = default)
     {
-        //var member = await _uow.Members.GetWithBookingsAsync(id, ct);
-        var member = await _uow.Members.GetByIdAsync(id, ct);
+        try
+        {
+            var member = await _uow.Members.GetWithHealthRecordAsync(id, trackChanges: false, ct: ct);
 
-        // Business rule: cannot delete if member has active bookings
-        if (await _uow.Bookings.GetWithDetailsAsync(id, DateTime.UtcNow, ct))
-            return false;
+            if (member?.HealthRecord is null)
+                return Result.Fail<DetailsHealthRecordDTO>("Health record not found", "HEALTH_RECORD_NOT_FOUND");
 
-        await _uow.Members.SoftDeleteAsync(member, ct);
-        if (member.HealthRecord is not null)
-            await _uow.HealthRecords.SoftDeleteAsync(member.HealthRecord, ct);
+            var healthRecord = member.HealthRecord;
+            var dto = new DetailsHealthRecordDTO
+            {
+                Height = healthRecord.Height,
+                Weight = healthRecord.Weight,
+                BloodType = healthRecord.BloodType.ToString(),
+                Notes = string.IsNullOrWhiteSpace(healthRecord.Note) ? "No notes available" : healthRecord.Note
+            };
 
+            return Result.Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting health record for member ID: {Id}", id);
+            return Result.Fail<DetailsHealthRecordDTO>("Failed to retrieve health record", "DATABASE_ERROR");
+        }
+    }
 
-        await _uow.Members.SaveChangesAsync(ct);
-        return true;
+    public async Task<Result<EditMemberDTO>> GetForEditAsync(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            var member = await _uow.Members.GetByIdAsync(id, ct);
+            if (member is null)
+            {
+                _logger.LogWarning("Member not found with ID: {Id}", id);
+                return Result.Fail<EditMemberDTO>("Member not found", "MEMBER_NOT_FOUND");
+            }
+
+            var dto = new EditMemberDTO
+            {
+                Id = member.Id,
+                Email = member.Email,
+                Phone = member.Phone,
+                BuildingNumber = member.Address.BuildingNumber,
+                Street = member.Address.Street,
+                City = member.Address.City
+            };
+
+            return Result.Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting member for edit, ID: {Id}", id);
+            return Result.Fail<EditMemberDTO>("Failed to retrieve member data", "DATABASE_ERROR");
+        }
+    }
+
+    public async Task<Result> UpdateAsync(EditMemberDTO dto, CancellationToken ct = default)
+    {
+        try
+        {
+            var member = await _uow.Members.GetByIdAsync(dto.Id, ct);
+            if (member is null)
+            {
+                _logger.LogWarning("Member not found with ID: {Id}", dto.Id);
+                return Result.Fail("Member not found", "MEMBER_NOT_FOUND");
+            }
+
+            // Only check email if it has changed
+            if (member.Email != dto.Email.Trim().ToLowerInvariant())
+            {
+                var emailCheck = await IsEmailTakenAsync(dto.Email, ct);
+                if (emailCheck.IsSuccess && emailCheck.Value)
+                    return Result.Fail("Email is already taken", "EMAIL_TAKEN");
+            }
+
+            // Only check phone if it has changed
+            if (member.Phone != dto.Phone.Trim())
+            {
+                var phoneCheck = await IsPhoneTakenAsync(dto.Phone, ct);
+                if (phoneCheck.IsSuccess && phoneCheck.Value)
+                    return Result.Fail("Phone number is already taken", "PHONE_TAKEN");
+            }
+
+            member.Email = dto.Email.Trim().ToLowerInvariant();
+            member.Phone = dto.Phone.Trim();
+            member.Address = new Address
+            {
+                BuildingNumber = dto.BuildingNumber,
+                Street = dto.Street.Trim(),
+                City = dto.City.Trim()
+            };
+
+            _uow.Members.Update(member, ct);
+            await _uow.Members.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Member updated successfully");
+            return Result.Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating member {Id}", dto.Id);
+            return Result.Fail("Failed to update member", "UPDATE_ERROR");
+        }
+    }
+
+    public async Task<Result<DeleteMemberDTO>> GetForDeleteAsync(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            var member = await _uow.Members.GetByIdAsync(id, ct);
+
+            if (member is null)
+            {
+                _logger.LogWarning("Member not found with ID: {Id}", id);
+                return Result.Fail<DeleteMemberDTO>("Member not found", "MEMBER_NOT_FOUND");
+            }
+
+            var dto = new DeleteMemberDTO
+            {
+                Id = member.Id,
+                Name = member.Name,
+                Photo = member.Photo
+            };
+
+            return Result.Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting member for delete, ID: {Id}", id);
+            return Result.Fail<DeleteMemberDTO>("Failed to retrieve member data", "DATABASE_ERROR");
+        }
+    }
+
+    public async Task<Result> DeleteAsync(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            //var member = await _uow.Members.GetWithBookingsAsync(id, ct);
+            var member = await _uow.Members.GetByIdAsync(id, ct);
+
+            if (member is null)
+            {
+                _logger.LogWarning("Member not found with ID: {Id}", id);
+                return Result.Fail<DeleteMemberDTO>("Member not found", "MEMBER_NOT_FOUND");
+            }
+
+            // Business rule: cannot delete if member has active bookings
+            var hasActiveBookings = await _uow.Bookings.GetWithDetailsAsync(id, DateTime.UtcNow, ct);
+
+            if (hasActiveBookings)
+                return Result.Fail("Cannot delete member with active bookings", "ACTIVE_BOOKINGS_EXIST");
+
+            await _uow.Members.SoftDeleteAsync(member, ct);
+
+            if (member.HealthRecord is not null)
+                await _uow.HealthRecords.SoftDeleteAsync(member.HealthRecord, ct);
+
+            await _uow.Members.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Member {Id} deleted successfully", id);
+            return Result.Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting member {Id}", id);
+            return Result.Fail("Failed to delete member", "DELETE_ERROR");
+        }
     }
 
     private int CalculateAge(DateOnly dateOfBirth)
