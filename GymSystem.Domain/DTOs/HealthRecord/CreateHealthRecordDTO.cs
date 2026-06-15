@@ -1,5 +1,4 @@
-﻿using GymSystem.Infrastructure.Entities.Enums;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace GymSystem.Domain.DTOs.HealthRecord;
 

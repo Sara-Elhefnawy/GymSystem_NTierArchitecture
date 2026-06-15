@@ -1,13 +1,16 @@
 ﻿using GymSystem.Domain.DTOs.Trainer;
 using GymSystem.Domain.Services;
+using GymSystem.Infrastructure.Entities.Enums;
 using GymSystem.UI.ViewModels.Trainer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace GymSystem.UI.Controllers;
 
+[Route("Trainer")]
 public class TrainerController(ITrainerService trainers) : Controller
 {
-    [HttpGet]
+    [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken ct = default)
     {
         var result = await trainers.GetAllAsync(ct);
@@ -30,14 +33,13 @@ public class TrainerController(ITrainerService trainers) : Controller
         return View(viewModels);
     }
 
-
-    [HttpGet]
+    [HttpGet("Create")]
     public IActionResult Create()
     {
         return View(new CreateTrainerViewModel());
     }
 
-    [HttpPost]
+    [HttpPost("Create")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CreateTrainerViewModel model, CancellationToken ct)
     {
@@ -110,7 +112,7 @@ public class TrainerController(ITrainerService trainers) : Controller
         return View(model);
     }
 
-    [HttpGet]
+    [HttpGet("Details/{id:int}")]
     public async Task<IActionResult> Details(int id, CancellationToken ct)
     {
         var result = await trainers.GetDetailsAsync(id, ct);
@@ -135,7 +137,7 @@ public class TrainerController(ITrainerService trainers) : Controller
         return View(viewModel);
     }
 
-    [HttpGet]
+    [HttpGet("Edit/{id:int}")]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
     {
         var result = await trainers.GetForEditAsync(id, ct);
@@ -157,17 +159,26 @@ public class TrainerController(ITrainerService trainers) : Controller
             Specialty = result.Value.Specialty,
         };
 
-        // Load Name and Photo from a separate call or modify GetForEditAsync to include them
+        // Load Name from a separate call or modify GetForEditAsync to include them
         var trainersDetails = await trainers.GetDetailsAsync(id);
         if (trainersDetails.IsSuccess)
         {
             viewModel.Name = trainersDetails.Value.Name;
         }
 
+        ViewBag.Specialties = Enum.GetValues(typeof(Specialty))
+        .Cast<Specialty>()
+        .Select(e => new SelectListItem
+        {
+            Value = e.ToString(),
+            Text = e.ToString(),
+            Selected = e.ToString() == viewModel.Specialty
+        }).ToList();
+
         return View(viewModel);
     }
 
-    [HttpPost]
+    [HttpPost("Edit/{id:int}")]
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Edit([FromRoute] int id, EditTrainerViewModel model, CancellationToken ct)
     {
@@ -175,7 +186,7 @@ public class TrainerController(ITrainerService trainers) : Controller
         if (id != model.Id)
             return NotFound();
 
-        // Remove Name and Photo from validation since they're not editable
+        // Remove Name from validation since they're not editable
         ModelState.Remove("Name");
 
         if (!ModelState.IsValid)
@@ -247,7 +258,7 @@ public class TrainerController(ITrainerService trainers) : Controller
                 break;
         }
 
-        // Reload Name and Photo for the view
+        // Reload Name for the view
         var trainerDetails = await trainers.GetDetailsAsync(id);
         if (trainerDetails.IsSuccess)
         {
@@ -257,7 +268,7 @@ public class TrainerController(ITrainerService trainers) : Controller
         return View(model);
     }
 
-    [HttpGet]
+    [HttpGet("Delete/{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var result = await trainers.GetForDeleteAsync(id, ct);
@@ -278,7 +289,7 @@ public class TrainerController(ITrainerService trainers) : Controller
         return View(viewModel);
     }
 
-    [HttpPost, ActionName("Delete")]
+    [HttpPost("Delete/{id:int}"), ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
     {

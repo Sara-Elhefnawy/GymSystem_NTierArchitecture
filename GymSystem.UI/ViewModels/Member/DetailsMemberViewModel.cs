@@ -21,5 +21,7 @@
     public DateOnly? MembershipStartDate { get; set; }
 
     public DateOnly? MembershipEndDate { get; set; }
+
+    public DetailsHealthRecordViewModel? HealthRecord { get; set; }
 }
 

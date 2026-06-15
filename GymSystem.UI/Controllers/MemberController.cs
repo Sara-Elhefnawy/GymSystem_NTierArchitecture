@@ -6,9 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GymSystem.UI.Controllers;
 
+[Route("Member")]
 public class MemberController(IMemberService members) : Controller
 {
-    [HttpGet]
+    [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken ct = default)
     {
         var result = await members.GetAllAsync(ct);
@@ -32,7 +33,7 @@ public class MemberController(IMemberService members) : Controller
         return View(viewModels);
     }
 
-    [HttpGet]
+    [HttpGet("Create")]
     public IActionResult Create()
     {
         return View(new CreateMemberViewModel
@@ -41,7 +42,7 @@ public class MemberController(IMemberService members) : Controller
         });
     }
 
-    [HttpPost]
+    [HttpPost("Create")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CreateMemberViewModel model, CancellationToken ct)
     {
@@ -120,7 +121,7 @@ public class MemberController(IMemberService members) : Controller
         return View(model);
     }
 
-    [HttpGet]
+    [HttpGet("Details/{id:int}")]
     public async Task<IActionResult> Details(int id, CancellationToken ct)
     {
         var result = await members.GetDetailsAsync(id, ct);
@@ -146,54 +147,22 @@ public class MemberController(IMemberService members) : Controller
             Address = result.Value.Address
         };
 
-        return View(viewModel);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> HealthRecord(int id, CancellationToken ct)
-    {
-        var result = await members.GetHealthRecordAsync(id, ct);
-
-        if (result.IsFailure)
+        var healthRecord = await members.GetHealthRecordAsync(id, ct);
+        if (healthRecord.IsSuccess)
         {
-            TempData["Error"] = result.Error;
-            return RedirectToAction(nameof(Index));
+            viewModel.HealthRecord = new DetailsHealthRecordViewModel
+            {
+                BloodType = healthRecord.Value.BloodType,
+                Height = healthRecord.Value.Height,
+                Weight = healthRecord.Value.Weight,
+                Notes = healthRecord.Value.Notes
+            };
         }
 
-        var viewModel = new DetailsHealthRecordViewModel
-        {
-            BloodType = result.Value.BloodType,
-            Height = result.Value.Height,
-            Weight = result.Value.Weight,
-            Notes = result.Value.Notes
-        };
-
         return View(viewModel);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> HealthRecordDetails(int id, CancellationToken ct)
-    {
-        var result = await members.GetHealthRecordAsync(id, ct);
-
-        if (result.IsFailure)
-        {
-            TempData["Error"] = result.Error;
-            return RedirectToAction(nameof(Index));
-        }
-
-        var viewModel = new DetailsHealthRecordViewModel
-        {
-            BloodType = result.Value.BloodType,
-            Height = result.Value.Height,
-            Weight = result.Value.Weight,
-            Notes = result.Value.Notes
-        };
-
-        return View(viewModel);
-    }
-
-    [HttpGet("Edit/{id}")]
+    [HttpGet("Edit/{id:int}")]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
     {
         var result = await members.GetForEditAsync(id, ct);
@@ -215,7 +184,7 @@ public class MemberController(IMemberService members) : Controller
         };
 
         // Load Name and Photo from a separate call or modify GetForEditAsync to include them
-        var memberDetails = await members.GetDetailsAsync(id);
+        var memberDetails = await members.GetDetailsAsync(id, ct);
         if (memberDetails.IsSuccess)
         {
             viewModel.Name = memberDetails.Value.Name;
@@ -225,7 +194,7 @@ public class MemberController(IMemberService members) : Controller
         return View(viewModel);
     }
 
-    [HttpPost("Edit/{id}")]
+    [HttpPost("Edit/{id:int}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit([FromRoute] int id, EditMemberViewModel model, CancellationToken ct)
     {
@@ -311,7 +280,7 @@ public class MemberController(IMemberService members) : Controller
         return View(model);
     }
 
-    [HttpGet]
+    [HttpGet("Delete/{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var result = await members.GetForDeleteAsync(id, ct);
@@ -332,7 +301,7 @@ public class MemberController(IMemberService members) : Controller
         return View(viewModel);
     }
 
-    [HttpPost, ActionName("Delete")]
+    [HttpPost("Delete/{id:int}"), ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
     {

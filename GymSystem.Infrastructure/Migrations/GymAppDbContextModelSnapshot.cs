@@ -66,7 +66,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("Bookings");
+                    b.ToTable("Bookings", (string)null);
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Category", b =>
@@ -96,7 +96,7 @@ namespace GymSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.GymUser", b =>
@@ -157,7 +157,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("GymUsers", t =>
+                    b.ToTable("GymUsers", null, t =>
                         {
                             t.HasCheckConstraint("GymUser_EmailCheck", "Email LIKE '_%@_%._%'");
 
@@ -216,7 +216,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("HealthRecord");
+                    b.ToTable("HealthRecord", (string)null);
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Membership", b =>
@@ -261,7 +261,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("Memberships");
+                    b.ToTable("Memberships", (string)null);
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Plan", b =>
@@ -309,7 +309,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("Plans", t =>
+                    b.ToTable("Plans", null, t =>
                         {
                             t.HasCheckConstraint("PlanDurationCheck", "DurationDays Between 1 and 365");
                         });
@@ -361,7 +361,7 @@ namespace GymSystem.Infrastructure.Migrations
 
                     b.HasIndex("TrainerId");
 
-                    b.ToTable("Sessions", t =>
+                    b.ToTable("Sessions", null, t =>
                         {
                             t.HasCheckConstraint("CK_Session_Capacity", "[Capacity] BETWEEN 1 AND 25");
 
@@ -459,7 +459,7 @@ namespace GymSystem.Infrastructure.Migrations
 
                             b1.HasKey("GymUserId");
 
-                            b1.ToTable("GymUsers");
+                            b1.ToTable("GymUsers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("GymUserId");

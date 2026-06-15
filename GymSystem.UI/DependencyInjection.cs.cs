@@ -1,6 +1,4 @@
-﻿using GymSystem.Domain.Services;
-
-namespace GymSystem.UI;
+﻿namespace GymSystem.UI;
 
 public static class DependencyInjection
 {
@@ -8,8 +6,6 @@ public static class DependencyInjection
         this IServiceCollection services)
     {
         services.AddControllersWithViews();
-
-        services.AddScoped<IMemberService, MemberService>();
 
         return services;
     }

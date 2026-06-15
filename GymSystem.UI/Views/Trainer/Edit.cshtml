@@ -69,7 +69,7 @@
                                 <label asp-for="Specialty" class="form-label fw-semibold">
                                     Specialty <span class="text-danger">*</span>
                                 </label>
-                                <select asp-for="Specialty" asp-items="Html.GetEnumSelectList<Specialty>()" class="form-select">
+                                <select asp-for="Specialty" asp-items="ViewBag.Specialties" class="form-select">
                                     <option value="">-- Select Specialty --</option>
                                 </select>
                                 <span asp-validation-for="Specialty" class="text-danger"></span>

@@ -5,9 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GymSystem.UI.Controllers;
 
+[Route("Session")]
 public class SessionController(ISessionService sessions) : Controller
 {
-    [HttpGet]
+    [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
         IReadOnlyList<IndexSessionDTO> dtos = await sessions.GetAllAsync(ct);

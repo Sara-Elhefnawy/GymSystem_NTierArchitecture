@@ -12,7 +12,7 @@ public class MemberRepository(GymAppDbContext dbContext) : Repository<Member>(db
     //    => await _dbSet.Include(m => m.Bookings)
     //        .FirstOrDefaultAsync(m => m.Id == id, ct);
 
-    public async Task<Member?> GetWithDetailsAsync(int id, CancellationToken ct = default)
+    public async Task<Member?> GetWithMembershipDetailsAsync(int id, CancellationToken ct = default)
         => await _dbSet.Include(m => m.Memberships)
             .ThenInclude(ms => ms.Plan)
             .FirstOrDefaultAsync(m => m.Id == id, ct);

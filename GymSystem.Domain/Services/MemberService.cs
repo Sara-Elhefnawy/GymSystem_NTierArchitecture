@@ -147,7 +147,7 @@ public class MemberService : IMemberService
     {
         try
         {
-            var member = await _uow.Members.GetWithDetailsAsync(id, ct);
+            var member = await _uow.Members.GetWithMembershipDetailsAsync(id, ct);
 
             if (member is null)
             {
@@ -331,7 +331,7 @@ public class MemberService : IMemberService
             }
 
             // Business rule: cannot delete if member has active bookings
-            var hasActiveBookings = await _uow.Bookings.GetWithDetailsAsync(id, DateTime.UtcNow, ct);
+            var hasActiveBookings = await _uow.Bookings.GetWithMemberDetailsAsync(id, DateTime.UtcNow, ct);
 
             if (hasActiveBookings)
                 return Result.Fail("Cannot delete member with active bookings", "ACTIVE_BOOKINGS_EXIST");

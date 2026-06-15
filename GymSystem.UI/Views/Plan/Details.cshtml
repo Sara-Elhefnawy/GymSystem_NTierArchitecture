@@ -1,4 +1,4 @@
-﻿@model Plan
+﻿@model DetailsPlanViewModel
 
 <div class="container mt-5">
     <div class="row justify-content-center">
@@ -51,15 +51,15 @@
                                     <p class="mb-0">
                                         @if (Model.IsActive)
                                         {
-                                                <span class="badge bg-success">
-                                                    Active
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-danger">
-                                                    Inactive
-                                                </span>
+                                            <span class="badge bg-success">
+                                                Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                Inactive
+                                            </span>
                                         }
                                     </p>
                                 </div>

@@ -4,7 +4,7 @@ namespace GymSystem.Infrastructure.Repositories;
 
 public interface IMemberRepository : IRepository<Member>
 {
-    Task<Member?> GetWithDetailsAsync(int id, CancellationToken ct = default);
+    Task<Member?> GetWithMembershipDetailsAsync(int id, CancellationToken ct = default);
     Task<Member?> GetWithHealthRecordAsync(int id, CancellationToken ct = default);
     //Task<Member?> GetWithBookingsAsync(int id, CancellationToken ct = default);
 

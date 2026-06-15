@@ -11,7 +11,7 @@ public class BookingRepository(GymAppDbContext dbContext) : Repository<Booking>(
         .Where(m => m.Id == memberId)
         .AnyAsync(m => m.Bookings.Any(b => b.Session.EndDate >= utcNow), ct);
 
-    public async Task<bool> GetWithDetailsAsync(int memberId, DateTime utcNow, CancellationToken ct = default)
+    public async Task<bool> GetWithMemberDetailsAsync(int memberId, DateTime utcNow, CancellationToken ct = default)
         => await dbContext.Set<Booking>()
             .AnyAsync(b => b.MemberId == memberId && b.Session.EndDate >= utcNow, ct);
 }
