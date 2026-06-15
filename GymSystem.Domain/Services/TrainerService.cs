@@ -1,5 +1,5 @@
 ﻿using GymSystem.Domain.Common;
-using GymSystem.Domain.DTOs.Member;
+using GymSystem.Domain.DTOs.Session.Lookups;
 using GymSystem.Domain.DTOs.Trainer;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
@@ -318,5 +318,16 @@ public class TrainerService : ITrainerService
         var age = today.Year - dateOfBirth.Year;
         if (dateOfBirth > today.AddYears(-age)) age--;
         return age;
+    }
+
+    public async Task<IReadOnlyList<TrainerLookupDTO>> GetTrainerLookupAsync(CancellationToken ct = default)
+    {
+        var trainers = await _uow.Trainers.GetAllAsync(ct);
+
+        return trainers.Select(t => new TrainerLookupDTO
+        {
+            Id = t.Id,
+            Name = t.Name
+        }).ToList();
     }
 }

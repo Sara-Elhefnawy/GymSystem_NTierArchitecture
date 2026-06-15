@@ -2,7 +2,6 @@
 @model ErrorViewModel
 @{
     ViewData["Title"] = "Oops! Something went wrong";
-    Layout = "_Layout";
 }
 
 <div class="container text-center py-5">
@@ -56,3 +55,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

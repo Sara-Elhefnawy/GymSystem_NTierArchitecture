@@ -1,5 +1,6 @@
 ﻿using GymSystem.Infrastructure.Data;
 using GymSystem.Infrastructure.Interceptor;
+using GymSystem.Infrastructure.QueryService;
 using GymSystem.Infrastructure.Repositories;
 using GymSystem.Infrastructure.Seeders;
 using GymSystem.Infrastructure.Services;
@@ -38,6 +39,8 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        services.AddScoped<ISessionQueryService, SessionQueryService>();
 
         services.AddScoped<IAnonymizationService, AnonymizationService>();
         services.AddScoped<DatabaseSeeder>();

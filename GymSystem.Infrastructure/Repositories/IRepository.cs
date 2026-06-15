@@ -10,6 +10,7 @@ public interface IRepository<TEntity> where TEntity : BaseEntity
     Task<IReadOnlyList<TEntity>> GetAllIncludingAsync(string[] includes, CancellationToken ct = default);
 
     Task<TEntity?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<TEntity?> GetByIdTrackingIncludingAsync(int id, bool trackChanges = true, Expression<Func<TEntity, object?>>[]? includes = null, CancellationToken ct = default);
     Task<TEntity?> GetByIdIncludingDeletedAsync(int id, CancellationToken ct = default);
 
     // Func vs Expression<Func>:

@@ -6,10 +6,10 @@ namespace GymSystem.Infrastructure.Repositories;
 
 public class SessionRepository(GymAppDbContext dbContext) : Repository<Session>(dbContext), ISessionRepository
 {
-    private readonly GymAppDbContext _dbContext = dbContext;
+    private readonly DbSet<Session> _dbSet = dbContext.Set<Session>();
 
     public async Task<IReadOnlyList<Session>> GetAllWithDetailsAsync(CancellationToken ct = default)
-        => await _dbContext.Sessions
+        => await _dbSet
             .Include(s => s.Category)
             .Include(s => s.Trainer)
             .Include(s => s.Bookings)
@@ -17,7 +17,7 @@ public class SessionRepository(GymAppDbContext dbContext) : Repository<Session>(
             .ToListAsync(ct);
 
     public async Task<bool> HasUpcomingSessionsForTrainerAsync(int trainerId, DateTime utcNow, CancellationToken ct = default)
-        => await _dbContext.Sessions
+        => await _dbSet
             .AnyAsync(s => s.TrainerId == trainerId && s.EndDate >= utcNow, ct);
 
 }

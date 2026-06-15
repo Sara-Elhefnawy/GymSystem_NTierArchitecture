@@ -1,24 +1,23 @@
-﻿namespace GymSystem.Domain.DTOs.Session;
+﻿using GymSystem.Domain.DTOs.Session.Enums;
+
+namespace GymSystem.Domain.DTOs.Session;
 
 public class IndexSessionDTO
 {
     public int Id { get; set; }
 
-    public string Specialty { get; set; } = default!;
-
     public string Description { get; set; } = default!;
 
     public string TrainerName { get; set; } = default!;
+    public string CategoryName { get; set; } = default!;
 
-    public string StartDate { get; set; } = default!;
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
 
-    public TimeSpan TimeRange { get; set; }
-
-    public string Duration { get; set; } = default!;
-
-    public int Capacity { get; set; }
-
+    public int MaxCapacity { get; set; }
     public int AvailableSlots { get; set; }
 
-    public string Status { get; set; } = default!;
+    public SessionStatus Status { get; set; }
+
+    //public TimeSpan Duration => EndDate - StartDate;
 }

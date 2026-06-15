@@ -1,4 +1,5 @@
 ﻿using GymSystem.Domain.Common;
+using GymSystem.Domain.DTOs.Session.Lookups;
 using GymSystem.Domain.DTOs.Trainer;
 
 namespace GymSystem.Domain.Services;
@@ -21,4 +22,6 @@ public interface ITrainerService
     Task<Result<DeleteTrainerDTO>> GetForDeleteAsync(int id, CancellationToken ct = default);
 
     Task<Result> DeleteAsync(int id, CancellationToken ct = default);
+
+    Task<IReadOnlyList<TrainerLookupDTO>> GetTrainerLookupAsync(CancellationToken ct = default);
 }

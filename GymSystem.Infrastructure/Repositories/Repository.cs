@@ -36,6 +36,29 @@ public class Repository<TEntity>(GymAppDbContext dbContext) : IRepository<TEntit
     public async Task<TEntity?> GetByIdAsync(int id, CancellationToken ct = default)
         => await _dbSet.FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public async Task<TEntity?> GetByIdTrackingIncludingAsync(
+        int id,
+        bool trackChanges = true,
+        Expression<Func<TEntity, object?>>[]? includes = null,
+        CancellationToken ct = default)
+    {
+        IQueryable<TEntity> query = _dbContext.Set<TEntity>();
+
+        if (!trackChanges)
+            query = query.AsNoTracking();
+
+        if (includes is not null)
+        {
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+        }
+
+        return await query.FirstOrDefaultAsync(e => e.Id == id, ct);
+    }
+
+
     // Why IgnoreQueryFilters()? 
     //      Cuz we want to include soft-deleted entities in the result, which are filtered out by global query filters.
     public async Task<TEntity?> GetByIdIncludingDeletedAsync(int id, CancellationToken ct = default)
