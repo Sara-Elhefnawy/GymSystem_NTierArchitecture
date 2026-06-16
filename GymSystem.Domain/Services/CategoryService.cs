@@ -1,6 +1,5 @@
 ﻿using GymSystem.Domain.Common;
 using GymSystem.Domain.DTOs.Category;
-using GymSystem.Domain.DTOs.Session.Lookups;
 using GymSystem.Infrastructure.UnitOfWorks;
 using Microsoft.Extensions.Logging;
 
@@ -22,13 +21,20 @@ public class CategoryService : ICategoryService
         try
         {
             var items = await _uow.Categories.GetAllAsync(ct);
-            var dtos = items.Select(m =>
+
+            Console.WriteLine($"Found {items?.Count() ?? 0} categories");
+
+            if (items == null || !items.Any())
             {
-                return new IndexCategoryDTO
-                {
-                    Name = m.Name,
-                    RequiredSpecialty = m.RequiredSpecialty.ToString()
-                };
+                Console.WriteLine("WARNING: No categories found in database!");
+                return Result.Ok<IReadOnlyList<IndexCategoryDTO>>(new List<IndexCategoryDTO>());
+            }
+
+            var dtos = items.Select(m => new IndexCategoryDTO
+            {
+                Id = m.Id,
+                Name = m.Name,
+                RequiredSpecialty = m.RequiredSpecialty.ToString()
             }).ToList();
 
             return Result.Ok<IReadOnlyList<IndexCategoryDTO>>(dtos);
@@ -39,16 +45,4 @@ public class CategoryService : ICategoryService
             return Result.Fail<IReadOnlyList<IndexCategoryDTO>>("Failed to retrieve categories", "DATABASE_ERROR");
         }
     }
-
-    public async Task<IReadOnlyList<CategoryLookupDTO>> GetCategoryLookupAsync(CancellationToken ct = default)
-    {
-        var categories = await _uow.Categories.GetAllAsync(ct);
-
-        return categories.Select(c => new CategoryLookupDTO
-        {
-            Id = c.Id,
-            Name = c.Name
-        }).ToList();
-    }
-
 }

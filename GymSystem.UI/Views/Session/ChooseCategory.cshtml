@@ -1,0 +1,35 @@
+﻿@model SelectList
+
+@{
+    ViewData["Title"] = "Choose Category";
+}
+
+<div class="container mt-4">
+    <header class="mb-4">
+        <h3 class="text-primary-color">Create New Session</h3>
+        <p class="text-muted">First, select a category for your session</p>
+    </header>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        @foreach (var category in Model)
+                        {
+                            <div class="col-12">
+                                <a asp-action="Create" asp-route-categoryId="@category.Value"
+                                   class="btn btn-outline-primary w-100 text-start p-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold">@category.Text</span>
+                                        <i class="bi bi-arrow-right-circle"></i>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

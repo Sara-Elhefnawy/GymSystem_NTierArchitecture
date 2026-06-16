@@ -1,37 +1,57 @@
-﻿@model CreateSessionViewModel
-
+﻿@model EditSessionViewModel
 @{
-    ViewData["Title"] = $"Create {Model.CategoryName} Session";
+    ViewData["Title"] = "Edit Session";
 }
 
 <div class="container mt-4">
     <header class="mb-4">
-        <h3 class="text-primary-color">Create @Model.CategoryName Session</h3>
-        <p class="text-muted">Schedule a new training session</p>
+        <h3 class="text-primary-color">Edit Session</h3>
+        <p class="text-muted">Update session information</p>
     </header>
 
-    <form asp-action="Create" asp-controller="Session" asp-route-categoryId="@Model.CategoryId" method="post">
+    @if (!string.IsNullOrEmpty(Model?.Status) && !Model.CanEdit)
+    {
+        <div class="alert alert-warning mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Session @Model.Status</strong> - This session cannot be edited because it has already started or completed.
+        </div>
+    }
+
+    <form asp-action="Edit" asp-controller="Session" asp-route-id="@Model.Id" method="post">
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-                        <!-- Category is fixed - display only -->
-                        <div class="alert alert-info mb-4">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Category:</strong> @Model.CategoryName
-                            <small class="text-muted d-block mt-1">Only trainers qualified for @Model.CategoryName will appear below</small>
+                        <!-- Display-only fields -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted">Category</label>
+                                <div class="form-control-plaintext">@Model.CategoryName</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted">Max Capacity</label>
+                                <div class="form-control-plaintext">@Model.MaxCapacity participants</div>
+                            </div>
                         </div>
 
+                        <hr />
+
+                        <!-- Editable fields -->
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label asp-for="TrainerId" class="form-label fw-semibold">
                                     Trainer <span class="text-danger">*</span>
                                 </label>
-                                <select asp-for="TrainerId" asp-items="@Model.TrainerList" class="form-select">
+                                
+                                <!-- ✅ CORRECT - Use select element with asp-items -->
+                                <select asp-for="TrainerId" asp-items="@(Model.TrainerList ?? new SelectList(new List<SelectListItem>()))" class="form-select" disabled="@(!Model.CanEdit)">
                                     <option value="">-- Select Trainer --</option>
                                 </select>
+                                
                                 <span asp-validation-for="TrainerId" class="text-danger"></span>
+                                <small class="text-muted">Only trainers qualified for @Model.CategoryName are shown</small>
                             </div>
 
                             <div class="col-12">
@@ -39,20 +59,12 @@
                                     Description <span class="text-danger">*</span>
                                 </label>
                                 <textarea asp-for="Description" class="form-control" rows="3"
-                                          placeholder="Describe the session content and objectives..."></textarea>
+                                          placeholder="Update session description..." readonly="@(!Model.CanEdit)"></textarea>
                                 <span asp-validation-for="Description" class="text-danger"></span>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label asp-for="Capacity" class="form-label fw-semibold">
-                                    Capacity <span class="text-danger">*</span>
-                                </label>
-                                <input asp-for="Capacity" type="number" class="form-control" min="1" max="25" />
-                                <small class="text-muted">Maximum 25 participants</small>
-                                <span asp-validation-for="Capacity" class="text-danger"></span>
                             </div>
                         </div>
 
+                        <!-- Date & Time -->
                         <div class="section-header mb-3">
                             <h5 class="text-primary fw-bold">Date & Time</h5>
                             <hr class="mt-2">
@@ -64,7 +76,7 @@
                                     Start Date & Time <span class="text-danger">*</span>
                                 </label>
                                 <input asp-for="StartDate" type="datetime-local" class="form-control"
-                                       value="@Model.StartDate.ToString("yyyy-MM-ddTHH:mm")" />
+                                       value="@Model.StartDate.ToString("yyyy-MM-ddTHH:mm")" readonly="@(!Model.CanEdit)" />
                                 <span asp-validation-for="StartDate" class="text-danger"></span>
                             </div>
 
@@ -73,14 +85,17 @@
                                     End Date & Time <span class="text-danger">*</span>
                                 </label>
                                 <input asp-for="EndDate" type="datetime-local" class="form-control"
-                                       value="@Model.EndDate.ToString("yyyy-MM-ddTHH:mm")" />
+                                       value="@Model.EndDate.ToString("yyyy-MM-ddTHH:mm")" readonly="@(!Model.CanEdit)" />
                                 <span asp-validation-for="EndDate" class="text-danger"></span>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4 pt-3 border-top">
-                            <a asp-action="ChooseCategory" class="btn btn-outline-secondary">Back to Categories</a>
-                            <button type="submit" class="btn btn-primary">Create Session</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                            @if (Model.CanEdit)
+                            {
+                                <button type="submit" class="btn btn-primary">Update Session</button>
+                            }
                         </div>
                     </div>
                 </div>

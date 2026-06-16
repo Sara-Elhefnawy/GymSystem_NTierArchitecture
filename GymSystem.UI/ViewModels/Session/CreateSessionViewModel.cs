@@ -5,6 +5,8 @@ namespace GymSystem.UI.ViewModels.Session;
 
 public class CreateSessionViewModel
 {
+    public string CategoryName { get; set; } = default!;
+
     [Required(ErrorMessage = "Category is required")]
     public int CategoryId { get; set; }
 
@@ -18,8 +20,12 @@ public class CreateSessionViewModel
     [Range(1, 25, ErrorMessage = "Capacity must be between 1 and 25")]
     public int Capacity { get; set; } = 25;
 
+    [Display(Name = "Start Date & Time")]
+    [DataType(DataType.DateTime)]
     public DateTime StartDate { get; set; } = DateTime.Now;
 
+    [Display(Name = "End Date & Time")]
+    [DataType(DataType.DateTime)]
     public DateTime EndDate { get; set; } = DateTime.Now.AddHours(1);
 
     public SelectList? CategoryList { get; set; }

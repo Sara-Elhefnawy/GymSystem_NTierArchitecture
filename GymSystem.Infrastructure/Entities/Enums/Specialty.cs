@@ -5,5 +5,8 @@ public enum Specialty
     GeneralFitness,
     Yoga,
     Boxing,
-    CrossFit
+    CrossFit,
+    Cardio,
+    PersonalTraining,
+    Bodybuilding
 }

@@ -4,6 +4,7 @@ namespace GymSystem.Domain.DTOs.Session;
 
 public class DetailsSessionDTO
 {
+    public int Id { get; set; }
     public string CategoryName { get; init; } = null!;
     public string Description { get; init; } = null!;
     public string TrainerName { get; init; } = null!;

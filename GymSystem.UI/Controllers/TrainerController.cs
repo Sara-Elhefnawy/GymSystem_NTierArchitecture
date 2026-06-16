@@ -160,7 +160,7 @@ public class TrainerController(ITrainerService trainers) : Controller
         };
 
         // Load Name from a separate call or modify GetForEditAsync to include them
-        var trainersDetails = await trainers.GetDetailsAsync(id);
+        var trainersDetails = await trainers.GetDetailsAsync(id, ct);
         if (trainersDetails.IsSuccess)
         {
             viewModel.Name = trainersDetails.Value.Name;
@@ -259,7 +259,7 @@ public class TrainerController(ITrainerService trainers) : Controller
         }
 
         // Reload Name for the view
-        var trainerDetails = await trainers.GetDetailsAsync(id);
+        var trainerDetails = await trainers.GetDetailsAsync(id, ct);
         if (trainerDetails.IsSuccess)
         {
             model.Name = trainerDetails.Value.Name;
@@ -293,15 +293,9 @@ public class TrainerController(ITrainerService trainers) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
     {
-        var result = await trainers.GetForDeleteAsync(id, ct);
+        var result = await trainers.DeleteAsync(id, ct);
 
         if (result.IsFailure)
-        {
-            TempData["Error"] = result.Error;
-            return RedirectToAction(nameof(Delete), new { id });
-        }
-
-        if (!result.IsSuccess)
         {
             TempData["Error"] = result.Error;
             return RedirectToAction(nameof(Delete), new { id });

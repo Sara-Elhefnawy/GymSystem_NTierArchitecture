@@ -94,7 +94,7 @@ public class TrainerService : ITrainerService
             await _uow.Trainers.AddAsync(trainer, ct);
             await _uow.Trainers.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Trainer created successfullywith ID: {Id}", trainer.Id);
+            _logger.LogInformation("Trainer created successfully with ID: {Id}", trainer.Id);
             return Result.Ok();
         }
         catch (Exception ex)

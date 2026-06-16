@@ -1,0 +1,78 @@
+﻿@model DeleteSessionViewModel
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card p-4 p-md-5 shadow text-center">
+
+                @if (!Model.CanDelete)
+                {
+                    <i class="bi bi-lock display-4 text-muted mb-3"></i>
+                    <p class="fs-3 text-primary-color mb-2">Cannot Delete Session</p>
+                    <p class="text-muted mb-4">Only upcoming sessions can be deleted. This session is currently <strong>@Model.Status</strong>.</p>
+                    <a asp-controller="Session" asp-action="Index" class="btn btn-outline flex-fill">Back to Sessions</a>
+                }
+                else
+                {
+                    <i class="bi bi-calendar-event display-4 text-primary-color mb-3"></i>
+                    <p class="fs-3 text-primary-color mb-2">Delete @Model.Specialty?</p>
+                    <p class="text-muted mb-4">Review session details before confirming.</p>
+
+                    <div class="text-start mb-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Trainer</small>
+                                    <strong>@Model.TrainerName</strong>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Description</small>
+                                    <strong>@Model.Description</strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Start Time</small>
+                                    <strong>@Model.StartDate.ToString("yyyy-MM-dd HH:mm")</strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">End Time</small>
+                                    <strong>@Model.EndDate.ToString("yyyy-MM-dd HH:mm")</strong>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Capacity</small>
+                                    <strong>@Model.CapacityDisplay</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning text-start" role="alert">
+                        <strong>Warning!</strong> This session will be deactivated and hidden from active records.
+                        @if (Model.BookedCount > 0)
+                        {
+                            <span> All <strong>@Model.BookedCount</strong> related booking@(Model.BookedCount == 1 ? "" : "s") will also be cancelled and hidden.</span>
+                        }
+                    </div>
+
+                    <form asp-controller="Session" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="mt-4">
+                        <div class="buttons d-flex justify-content-between gap-3">
+                            <a asp-controller="Session" asp-action="Index" class="btn-outline flex-fill">NO</a>
+                            <button type="submit" class="btn-fill flex-fill">Yes</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

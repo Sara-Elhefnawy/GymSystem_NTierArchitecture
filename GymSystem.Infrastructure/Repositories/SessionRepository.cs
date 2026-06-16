@@ -20,4 +20,16 @@ public class SessionRepository(GymAppDbContext dbContext) : Repository<Session>(
         => await _dbSet
             .AnyAsync(s => s.TrainerId == trainerId && s.EndDate >= utcNow, ct);
 
+    public async Task<bool> HasTrainerConflictAsync(
+            int trainerId, 
+            DateTime start, 
+            DateTime end,
+            int? excludeSessionId = null, 
+            CancellationToken ct = default)
+        => await _dbSet.AnyAsync(s =>
+                s.TrainerId == trainerId
+                && s.Id != excludeSessionId
+                && s.StartDate < end
+                && s.EndDate > start, ct);
+
 }
