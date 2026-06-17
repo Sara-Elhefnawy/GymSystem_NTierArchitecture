@@ -28,8 +28,11 @@
                 {
                     <tr>
                         <td>
-                            <img src="@(member.Photo ?? Url.Content("~/images/User.jpg"))"
-                                 class="rounded-circle" style="width:40px;height:40px;" />
+                            <img src="@Url.Action("GetPhoto", "Member", new { id = member.Id })"
+                                 alt="@member.Name"
+                                 class="rounded-circle"
+                                 style="width:40px;height:40px;object-fit:cover;"
+                                 onerror="this.src='/images/User.png'" />
                         </td>
                         <td>@member.Name</td>
                         <td>@member.Email</td>

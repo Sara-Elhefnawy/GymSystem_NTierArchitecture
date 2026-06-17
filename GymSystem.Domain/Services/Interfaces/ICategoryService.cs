@@ -1,5 +1,5 @@
-﻿using GymSystem.Domain.Common;
-using GymSystem.Domain.DTOs.Category;
+﻿using GymSystem.Domain.DTOs.Category;
+using GymSystem.Shared.Common;
 
 namespace GymSystem.Domain.Services.Interfaces;
 

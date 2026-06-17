@@ -1,4 +1,5 @@
 ﻿using GymSystem.Domain.DTOs.HealthRecord;
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 namespace GymSystem.Domain.DTOs.Member;
@@ -46,4 +47,5 @@ public class CreateMemberDTO
     [Required(ErrorMessage = "HealthRecord is required")]
     public CreateHealthRecordDTO HealthRecord { get; set; } = new CreateHealthRecordDTO();
 
+    public IFormFile? Photo { get; set; }
 }

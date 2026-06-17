@@ -1,6 +1,6 @@
-﻿using GymSystem.Domain.Common;
-using GymSystem.Domain.DTOs.Session.Lookups;
+﻿using GymSystem.Domain.DTOs.Session.Lookups;
 using GymSystem.Domain.DTOs.Trainer;
+using GymSystem.Shared.Common;
 
 namespace GymSystem.Domain.Services.Interfaces;
 

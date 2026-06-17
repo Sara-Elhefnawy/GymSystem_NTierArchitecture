@@ -1,4 +1,4 @@
-﻿namespace GymSystem.Domain.Common;
+﻿namespace GymSystem.Shared.Common;
 
 public abstract class Result : IResult
 {

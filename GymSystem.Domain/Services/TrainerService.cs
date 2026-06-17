@@ -1,10 +1,10 @@
-﻿using GymSystem.Domain.Common;
-using GymSystem.Domain.DTOs.Session.Lookups;
+﻿using GymSystem.Domain.DTOs.Session.Lookups;
 using GymSystem.Domain.DTOs.Trainer;
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
 using GymSystem.Infrastructure.UnitOfWorks;
+using GymSystem.Shared.Common;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 

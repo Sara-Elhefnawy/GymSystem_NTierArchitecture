@@ -1,25 +1,22 @@
-﻿using GymSystem.Domain.Common;
+﻿using GymSystem.Domain.Attachments;
 using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
 using GymSystem.Domain.Services.Interfaces;
+using GymSystem.Infrastructure.Attachments;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
 using GymSystem.Infrastructure.UnitOfWorks;
+using GymSystem.Shared.Common;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
 namespace GymSystem.Domain.Services;
 
-public class MemberService : IMemberService
+public class MemberService(IUnitOfWork uow, ILogger<MemberService> logger, IAttachmentService attachmentService) : IMemberService
 {
-    private readonly IUnitOfWork _uow;
-    private readonly ILogger<MemberService> _logger;
-
-    public MemberService(IUnitOfWork uow, ILogger<MemberService> logger)
-    {
-        _uow = uow;
-        _logger = logger;
-    }
+    private readonly IUnitOfWork _uow = uow;
+    private readonly ILogger<MemberService> _logger = logger;
+    private readonly IAttachmentService _attachmentService = attachmentService;
 
     public async Task<Result<IReadOnlyList<IndexMemberDTO>>> GetAllAsync(CancellationToken ct = default)
     {
@@ -50,6 +47,8 @@ public class MemberService : IMemberService
 
     public async Task<Result> CreateAsync(CreateMemberDTO model, CancellationToken ct = default)
     {
+        string? uploadedPhotoPath = null;
+
         try
         {
             var email = model.Email.Trim().ToLowerInvariant();
@@ -101,6 +100,36 @@ public class MemberService : IMemberService
                 }
             };
 
+            if (model.Photo is { Length: > 0 })
+            {
+                _logger.LogInformation("Processing photo upload for member. File: {FileName}, Size: {FileSize} bytes",
+                    model.Photo.FileName, model.Photo.Length);
+
+                try
+                {
+                    var saveResult = await _attachmentService.SaveAsync(model.Photo, AttachmentsCategories.Members, ct);
+
+                    if (saveResult.IsFailure)
+                    {
+                        _logger.LogWarning("Failed to save photo: {Error}", saveResult.Error);
+                        return Result.Fail("Error saving image");
+                    }
+
+                    uploadedPhotoPath = saveResult.Value;
+                    member.Photo = saveResult.Value;
+                    _logger.LogInformation("Photo saved successfully: {PhotoPath}", member.Photo);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception during photo upload");
+                    return Result.Fail("Error saving image");
+                }
+            }
+            else
+            {
+                _logger.LogInformation("No photo provided for member");
+            }
+
             await _uow.Members.AddAsync(member, ct);
             await _uow.Members.SaveChangesAsync(ct);
 
@@ -110,6 +139,14 @@ public class MemberService : IMemberService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating member");
+
+            // Clean up uploaded photo if member creation failed
+            if (!string.IsNullOrEmpty(uploadedPhotoPath))
+            {
+                _logger.LogWarning("Member creation failed. Cleaning up uploaded photo: {PhotoPath}", uploadedPhotoPath);
+                await _attachmentService.DeleteAsync(uploadedPhotoPath, ct);
+            }
+
             return Result.Fail("An unexpected error occurred", "INTERNAL_ERROR");
         }
     }
@@ -322,7 +359,6 @@ public class MemberService : IMemberService
     {
         try
         {
-            //var member = await _uow.Members.GetWithBookingsAsync(id, ct);
             var member = await _uow.Members.GetByIdAsync(id, ct);
 
             if (member is null)
@@ -336,6 +372,21 @@ public class MemberService : IMemberService
 
             if (hasActiveBookings)
                 return Result.Fail("Cannot delete member with active bookings", "ACTIVE_BOOKINGS_EXIST");
+
+            // Delete the photo if it exists
+            if (!string.IsNullOrEmpty(member.Photo))
+            {
+                _logger.LogInformation("Deleting photo for member {Id}: {Photo}", id, member.Photo);
+                var deleteResult = await _attachmentService.DeleteAsync(member.Photo, ct);
+                if (deleteResult.IsFailure)
+                {
+                    _logger.LogWarning("Failed to delete photo for member {Id}: {Error}", id, deleteResult.Error);
+                }
+                else
+                {
+                    _logger.LogInformation("Photo deleted successfully for member {Id}", id);
+                }
+            }
 
             await _uow.Members.SoftDeleteAsync(member, ct);
 
@@ -351,6 +402,41 @@ public class MemberService : IMemberService
         {
             _logger.LogError(ex, "Error deleting member {Id}", id);
             return Result.Fail("Failed to delete member", "DELETE_ERROR");
+        }
+    }
+
+    public async Task<Result<byte[]>> GetMemberPhotoAsync(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            var member = await _uow.Members.GetByIdAsync(id, ct);
+            if (member is null)
+            {
+                _logger.LogWarning("Member not found with ID: {Id}", id);
+                return Result.Fail<byte[]>("Member not found", "MEMBER_NOT_FOUND");
+            }
+
+            if (string.IsNullOrEmpty(member.Photo))
+            {
+                _logger.LogInformation("Member {Id} has no photo", id);
+                return Result.Fail<byte[]>("No photo available", "PHOTO_NOT_FOUND");
+            }
+
+            var fullPath = _attachmentService.GetFullPath(member.Photo);
+            if (!File.Exists(fullPath))
+            {
+                _logger.LogWarning("Photo file not found: {FullPath}", fullPath);
+                return Result.Fail<byte[]>("Photo file not found", "PHOTO_NOT_FOUND");
+            }
+
+            // Read bytes directly - file is closed immediately after reading
+            var bytes = await File.ReadAllBytesAsync(fullPath, ct);
+            return Result.Ok(bytes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting photo for member {Id}", id);
+            return Result.Fail<byte[]>("Failed to retrieve photo", "DATABASE_ERROR");
         }
     }
 

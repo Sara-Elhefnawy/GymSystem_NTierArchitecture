@@ -7,93 +7,96 @@
                 <div class="col-md-8">
                     <div class="card card-details border-0 p-2 shadow">
                         <div class="text-center mt-3">
-                            <img src="~/images/User.jpg" alt="MemberName" class="rounded-circle"
-                                 style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #fff; margin-top: -60px;" />
+                            <img src="@Url.Action("GetPhoto", "Member", new { id = Model.Id })"
+                                 alt="@Model.Name"
+                                 class="rounded-circle"
+                                 style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #fff; margin-top: -60px;"
+                                 onerror="this.src='/images/User.png'" />
                         </div>
                         <div class="card-body">
-                            <h2 class="mb-1 text-center text-primary-color">@Model.Name</h2>
-                            <h4 class="mb-2 pb-1 text-center border-bottom d-block">@(Model.PlanName ?? "No Plan")</h4>
+                        <h2 class="mb-1 text-center text-primary-color">@Model.Name</h2>
+                        <h4 class="mb-2 pb-1 text-center border-bottom d-block">@(Model.PlanName ?? "No Plan")</h4>
 
-                            <!-- Member Information Section -->
-                            <h5 class="mt-4 mb-3 text-primary-color">Member Information</h5>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded">
-                                        <small class="text-muted d-block mb-1">Email</small>
-                                        <strong>@Model.Email</strong>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded">
-                                        <small class="text-muted d-block mb-1">Phone</small>
-                                        <strong>@Model.Phone</strong>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded">
-                                        <small class="text-muted d-block mb-1">Gender</small>
-                                        <strong>@Model.Gender</strong>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded">
-                                        <small class="text-muted d-block mb-1">Date of Birth</small>
-                                        <strong>@Model.DateOfBirth.ToString("yyyy-MM-dd")</strong>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded">
-                                        <small class="text-muted d-block mb-1">Membership Start Date</small>
-                                        <strong>@(Model.MembershipStartDate?.ToString("yyyy-MM-dd") ?? "Not assigned")</strong>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded">
-                                        <small class="text-muted d-block mb-1">Membership End Date</small>
-                                        <strong>@(Model.MembershipEndDate?.ToString("yyyy-MM-dd") ?? "Not assigned")</strong>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="p-3 bg-light rounded">
-                                        <small class="text-muted d-block mb-1">Address</small>
-                                        <strong>@Model.Address</strong>
-                                    </div>
+                        <!-- Member Information Section -->
+                        <h5 class="mt-4 mb-3 text-primary-color">Member Information</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Email</small>
+                                    <strong>@Model.Email</strong>
                                 </div>
                             </div>
-
-                            <!-- Health Record Section -->
-                            <h5 class="mt-4 mb-3 text-primary-color">Health Record</h5>
-                            @if (Model.HealthRecord != null)
-                            {
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <div class="p-3 bg-light rounded">
-                                            <small class="text-muted d-block mb-1">Blood Type</small>
-                                            <strong>@Model.HealthRecord.BloodType</strong>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="p-3 bg-light rounded">
-                                            <small class="text-muted d-block mb-1">Height</small>
-                                            <strong>@Model.HealthRecord.Height cm</strong>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="p-3 bg-light rounded">
-                                            <small class="text-muted d-block mb-1">Weight</small>
-                                            <strong>@Model.HealthRecord.Weight kg</strong>
-                                        </div>
-                                    </div>
-                                    @if (!string.IsNullOrEmpty(Model.HealthRecord.Notes))
-                                    {
-                                        <div class="col-12">
-                                            <div class="p-3 bg-light rounded">
-                                                <small class="text-muted d-block mb-1">Medical Notes</small>
-                                                <strong>@Model.HealthRecord.Notes</strong>
-                                            </div>
-                                        </div>
-                                    }
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Phone</small>
+                                    <strong>@Model.Phone</strong>
                                 </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Gender</small>
+                                    <strong>@Model.Gender</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Date of Birth</small>
+                                    <strong>@Model.DateOfBirth.ToString("yyyy-MM-dd")</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Membership Start Date</small>
+                                    <strong>@(Model.MembershipStartDate?.ToString("yyyy-MM-dd") ?? "Not assigned")</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Membership End Date</small>
+                                    <strong>@(Model.MembershipEndDate?.ToString("yyyy-MM-dd") ?? "Not assigned")</strong>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Address</small>
+                                    <strong>@Model.Address</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                <!-- Health Record Section -->
+                <h5 class="mt-4 mb-3 text-primary-color">Health Record</h5>
+                @if (Model.HealthRecord != null)
+                {
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded">
+                                <small class="text-muted d-block mb-1">Blood Type</small>
+                                <strong>@Model.HealthRecord.BloodType</strong>
+                            </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Height</small>
+                                    <strong>@Model.HealthRecord.Height cm</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded">
+                                    <small class="text-muted d-block mb-1">Weight</small>
+                                    <strong>@Model.HealthRecord.Weight kg</strong>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.HealthRecord.Notes))
+                            {
+                                <div class="col-12">
+                                    <div class="p-3 bg-light rounded">
+                                        <small class="text-muted d-block mb-1">Medical Notes</small>
+                                        <strong>@Model.HealthRecord.Notes</strong>
+                                    </div>
+                                </div>
+                            }
+                            </div>
                             }
                             else
                             {

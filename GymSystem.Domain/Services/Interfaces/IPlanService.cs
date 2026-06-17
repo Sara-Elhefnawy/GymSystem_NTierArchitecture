@@ -1,5 +1,5 @@
-﻿using GymSystem.Domain.Common;
-using GymSystem.Domain.DTOs.Plan;
+﻿using GymSystem.Domain.DTOs.Plan;
+using GymSystem.Shared.Common;
 
 namespace GymSystem.Domain.Services.Interfaces;
 

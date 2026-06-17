@@ -7,123 +7,232 @@
 <div class="container mt-4">
     <h2>Create New Member</h2>
 
-    <form asp-action="Create" method="post">
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
         <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label asp-for="Name" class="form-label"></label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name" class="text-danger"></span>
+            <div class="col-md-8">
+                <!-- Personal Information -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Gender" class="form-label"></label>
+                            <select asp-for="Gender" class="form-select" asp-items="Html.GetEnumSelectList<Gender>()">
+                                <option value="">-- Select Gender --</option>
+                            </select>
+                            <span asp-validation-for="Gender" class="text-danger"></span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label asp-for="Gender" class="form-label"></label>
-                    <select asp-for="Gender" class="form-select" asp-items="Html.GetEnumSelectList<Gender>()">
-                        <option value="">-- Select Gender --</option>
-                    </select>
-                    <span asp-validation-for="Gender" class="text-danger"></span>
-                </div>
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label asp-for="Email" class="form-label"></label>
-                    <input asp-for="Email" class="form-control" type="email" />
-                    <span asp-validation-for="Email" class="text-danger"></span>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" type="email" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Phone" class="form-label"></label>
+                            <input asp-for="Phone" class="form-control" />
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label asp-for="Phone" class="form-label"></label>
-                    <input asp-for="Phone" class="form-control" />
-                    <span asp-validation-for="Phone" class="text-danger"></span>
-                </div>
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label asp-for="DateOfBirth" class="form-label"></label>
-                    <input asp-for="DateOfBirth" type="date" class="form-control" />
-                    <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label asp-for="DateOfBirth" class="form-label"></label>
+                            <input asp-for="DateOfBirth" type="date" class="form-control" />
+                            <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <h4>Address</h4>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label asp-for="BuildingNumber" class="form-label"></label>
-                    <input asp-for="BuildingNumber" class="form-control" />
-                    <span asp-validation-for="BuildingNumber" class="text-danger"></span>
+                <h4>Address</h4>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="BuildingNumber" class="form-label"></label>
+                            <input asp-for="BuildingNumber" class="form-control" />
+                            <span asp-validation-for="BuildingNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Street" class="form-label"></label>
+                            <input asp-for="Street" class="form-control" />
+                            <span asp-validation-for="Street" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="City" class="form-label"></label>
+                            <input asp-for="City" class="form-control" />
+                            <span asp-validation-for="City" class="text-danger"></span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label asp-for="Street" class="form-label"></label>
-                    <input asp-for="Street" class="form-control" />
-                    <span asp-validation-for="Street" class="text-danger"></span>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label asp-for="City" class="form-label"></label>
-                    <input asp-for="City" class="form-control" />
-                    <span asp-validation-for="City" class="text-danger"></span>
-                </div>
-            </div>
-        </div>
 
-        <h4>Health Record</h4>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label asp-for="HealthRecord.Height" class="form-label"></label>
-                    <input asp-for="HealthRecord.Height" class="form-control" step="0.01" />
-                    <span asp-validation-for="HealthRecord.Height" class="text-danger"></span>
+                <h4>Health Record</h4>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="HealthRecord.Height" class="form-label"></label>
+                            <input asp-for="HealthRecord.Height" class="form-control" step="0.01" />
+                            <span asp-validation-for="HealthRecord.Height" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="HealthRecord.Weight" class="form-label"></label>
+                            <input asp-for="HealthRecord.Weight" class="form-control" step="0.01" />
+                            <span asp-validation-for="HealthRecord.Weight" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="HealthRecord.BloodType" class="form-label"></label>
+                            <select asp-for="HealthRecord.BloodType" class="form-select">
+                                <option value="">-- Select Blood Type --</option>
+                                @foreach (BloodType bloodType in Enum.GetValues(typeof(BloodType)))
+                                {
+                                    var displayName = bloodType.ToString().Replace('_', ' ');
+                                    <option value="@bloodType.ToString()">@displayName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="HealthRecord.BloodType" class="text-danger"></span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label asp-for="HealthRecord.Weight" class="form-label"></label>
-                    <input asp-for="HealthRecord.Weight" class="form-control" step="0.01" />
-                    <span asp-validation-for="HealthRecord.Weight" class="text-danger"></span>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label asp-for="HealthRecord.BloodType" class="form-label"></label>
-                    <select asp-for="HealthRecord.BloodType" class="form-select">
-                        <option value="">-- Select Blood Type --</option>
-                        @foreach (BloodType bloodType in Enum.GetValues(typeof(BloodType)))
-                        {
-                            var displayName = bloodType.ToString().Replace('_', ' ');
-                            <option value="@bloodType.ToString()">@displayName</option>
-                        }
-                    </select>
-                    <span asp-validation-for="HealthRecord.BloodType" class="text-danger"></span>
-                </div>
-            </div>
-        </div>
 
-        <div class="mb-3">
-            <label asp-for="HealthRecord.Note" class="form-label"></label>
-            <textarea asp-for="HealthRecord.Note" class="form-control" rows="3"></textarea>
-            <span asp-validation-for="HealthRecord.Note" class="text-danger"></span>
+                <div class="mb-3">
+                    <label asp-for="HealthRecord.Note" class="form-label"></label>
+                    <textarea asp-for="HealthRecord.Note" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="HealthRecord.Note" class="text-danger"></span>
+                </div>
+            </div>
+
+            <!-- Photo Column (Right Side) -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Member Photo</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <!-- Photo Preview -->
+                        <div id="photoPreviewContainer" class="d-none mb-3">
+                            <img id="photoPreview" src="#" alt="Photo Preview" class="img-fluid rounded" style="max-height: 250px; width: auto;" />
+                        </div>
+
+                        <!-- No Photo Placeholder -->
+                        <div id="noPhotoPlaceholder" class="mb-3">
+                            <i class="bi bi-person-circle" style="font-size: 120px; color: #dee2e6;"></i>
+                            <p class="text-muted mt-2">No photo selected</p>
+                        </div>
+
+                        <!-- File Input -->
+                        <div class="mb-3">
+                            <label asp-for="Photo" class="form-label fw-bold"></label>
+                            <input asp-for="Photo" type="file" class="form-control" accept="image/*" />
+                            <span asp-validation-for="Photo" class="text-danger"></span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2">
+                            <button type="button" id="clearPhotoBtn" class="btn btn-outline-danger btn-sm d-none">
+                                <i class="bi bi-x-circle"></i> Remove Photo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optional: Photo Requirements -->
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h6 class="card-title"><i class="bi bi-info-circle"></i> Photo Guidelines</h6>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li>Maximum file size: 5MB</li>
+                            <li>Accepted formats: JPG, PNG, JPEG</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="mt-4">
-            <button type="submit" class="btn btn-primary">Create Member</button>
-            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create Member
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Cancel
+            </a>
         </div>
     </form>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            const photoInput = document.getElementById('Photo');
+            const photoPreview = document.getElementById('photoPreview');
+            const photoPreviewContainer = document.getElementById('photoPreviewContainer');
+            const noPhotoPlaceholder = document.getElementById('noPhotoPlaceholder');
+            const clearPhotoBtn = document.getElementById('clearPhotoBtn');
+
+            if (!photoInput || !photoPreview || !photoPreviewContainer || !noPhotoPlaceholder) {
+                return;
+            }
+
+            // Show preview when file is selected
+            photoInput.addEventListener('change', function () {
+                const file = photoInput.files?.[0];
+
+                if (!file || !file.type.startsWith('image/')) {
+                    resetPreview();
+                    return;
+                }
+
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size exceeds 5MB limit. Please choose a smaller image.');
+                    photoInput.value = '';
+                    resetPreview();
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    photoPreview.src = event.target?.result;
+                    photoPreviewContainer.classList.remove('d-none');
+                    noPhotoPlaceholder.classList.add('d-none');
+                    clearPhotoBtn.classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Clear photo button
+            clearPhotoBtn.addEventListener('click', function () {
+                photoInput.value = '';
+                resetPreview();
+            });
+
+            function resetPreview() {
+                photoPreview.removeAttribute('src');
+                photoPreviewContainer.classList.add('d-none');
+                noPhotoPlaceholder.classList.remove('d-none');
+                clearPhotoBtn.classList.add('d-none');
+            }
+        })();
+    </script>
 }

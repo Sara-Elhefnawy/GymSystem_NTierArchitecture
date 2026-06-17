@@ -4,10 +4,18 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card p-5 shadow text-center">
+                <div class="mb-4">
+                    <img src="@Url.Action("GetPhoto", "Member", new { id = Model.Id })"
+                         alt="@Model.Name"
+                         class="rounded-circle"
+                         style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #dee2e6;" />
+                </div>
+
+                <h3 class="text-primary-color mb-3">@Model.Name</h3>
                 <p class="fs-3 text-primary-color mb-4">Are you sure you want to delete this member?</p>
 
                 <div class="alert alert-warning text-start" role="alert">
-                    <strong>Warning!</strong> This action cannot be undone. All member data will be permanently deleted.
+                    <strong>Warning!</strong> This action cannot be undone. All member data and photos will be permanently deleted.
                 </div>
 
                 <form asp-action="Delete" method="post" class="mt-4">

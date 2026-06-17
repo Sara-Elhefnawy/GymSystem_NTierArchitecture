@@ -1,6 +1,6 @@
-﻿using GymSystem.Domain.Common;
-using GymSystem.Domain.DTOs.HealthRecord;
+﻿using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
+using GymSystem.Shared.Common;
 
 namespace GymSystem.Domain.Services.Interfaces;
 
@@ -21,4 +21,6 @@ public interface IMemberService
 
     Task<Result<DeleteMemberDTO>> GetForDeleteAsync(int id, CancellationToken ct = default);
     Task<Result> DeleteAsync(int id, CancellationToken ct = default);
+
+    Task<Result<byte[]>> GetMemberPhotoAsync(int id, CancellationToken ct = default);
 }

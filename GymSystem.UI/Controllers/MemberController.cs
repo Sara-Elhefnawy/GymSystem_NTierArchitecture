@@ -70,7 +70,8 @@ public class MemberController(IMemberService members) : Controller
                 Height = model.HealthRecord.Height,
                 Weight = model.HealthRecord.Weight,
                 Note = model.HealthRecord.Note
-            }
+            },
+            Photo = model.Photo
         };
 
         var result = await members.CreateAsync(dto, ct);
@@ -120,7 +121,48 @@ public class MemberController(IMemberService members) : Controller
                 break;
         }
 
+        // Clear the photo from the model so it doesn't try to re-upload
+        model.Photo = null;
+
         return View(model);
+    }
+
+    [HttpGet("Photo/{id:int}")]
+    public async Task<IActionResult> GetPhoto(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            // First get the member to get the photo path
+            var memberResult = await members.GetDetailsAsync(id, ct);
+            if (memberResult.IsFailure || string.IsNullOrEmpty(memberResult.Value.Photo))
+            {
+                return File("~/images/User.png", "image/png");
+            }
+
+            // Get the photo stream from attachment service
+            var photoResult = await members.GetMemberPhotoAsync(id, ct);
+            if (photoResult.IsFailure)
+            {
+                return File("~/images/User.png", "image/png");
+            }
+
+            // Determine content type from the stored path
+            var contentTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { ".jpg", "image/jpeg" },
+            { ".jpeg", "image/jpeg" },
+            { ".png", "image/png" }
+        };
+
+            var extension = Path.GetExtension(memberResult.Value.Photo).ToLowerInvariant();
+            var contentType = contentTypes.TryGetValue(extension, out var value) ? value : "image/jpeg";
+
+            return File(photoResult.Value, contentType);
+        }
+        catch (Exception)
+        {
+            return File("~/images/User.png", "image/png");
+        }
     }
 
     [HttpGet("Details/{id:int}")]

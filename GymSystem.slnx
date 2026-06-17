@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="GymSystem.Domain/GymSystem.Domain.csproj" />
   <Project Path="GymSystem.Infrastructure/GymSystem.Infrastructure.csproj" />
+  <Project Path="GymSystem.Shared/GymSystem.Shared.csproj" Id="9757ec84-373f-4c92-9d78-d859797c7945" />
   <Project Path="GymSystem.UI/GymSystem.UI.csproj" />
 </Solution>
