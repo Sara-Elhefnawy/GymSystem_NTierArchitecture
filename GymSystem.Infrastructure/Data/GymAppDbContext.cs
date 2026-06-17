@@ -1,9 +1,11 @@
 ﻿using GymSystem.Infrastructure.Entities;
+using GymSystem.Infrastructure.Identities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymSystem.Infrastructure.Data;
 
-public class GymAppDbContext : DbContext
+public class GymAppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, int>
 {
     public GymAppDbContext(DbContextOptions<GymAppDbContext> options)
         : base(options) { }
@@ -23,5 +25,7 @@ public class GymAppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(GymAppDbContext).Assembly);
+    
+        base.OnModelCreating(modelBuilder);
     }
 }

@@ -23,15 +23,15 @@ public class Repository<TEntity>(GymAppDbContext dbContext) : IRepository<TEntit
     /// <param name="includes">An array of navigation property paths (as strings) to be included in the query results.</param>
     /// <param name="ct">A token to monitor for cancellation requests during the database operation.</param>
     /// <returns>A read-only list containing all retrieved entities, including their specified related data.</returns>
-    public async Task<IReadOnlyList<TEntity>> GetAllIncludingAsync(string[] includes, CancellationToken ct = default)
-    {
-        var query = _dbSet.AsQueryable();
+    //public async Task<IReadOnlyList<TEntity>> GetAllIncludingAsync(string[] includes, CancellationToken ct = default)
+    //{
+    //    var query = _dbSet.AsQueryable();
 
-        foreach (var item in includes)
-            query = query.Include(item);
+    //    foreach (var item in includes)
+    //        query = query.Include(item);
 
-        return await query.ToListAsync(ct);
-    }
+    //    return await query.ToListAsync(ct);
+    //}
 
     public async Task<TEntity?> GetByIdAsync(int id, CancellationToken ct = default)
         => await _dbSet.FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -61,19 +61,19 @@ public class Repository<TEntity>(GymAppDbContext dbContext) : IRepository<TEntit
 
     // Why IgnoreQueryFilters()? 
     //      Cuz we want to include soft-deleted entities in the result, which are filtered out by global query filters.
-    public async Task<TEntity?> GetByIdIncludingDeletedAsync(int id, CancellationToken ct = default)
-        => await _dbSet.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id, ct);
+    //public async Task<TEntity?> GetByIdIncludingDeletedAsync(int id, CancellationToken ct = default)
+    //    => await _dbSet.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
-        => await _dbSet.AnyAsync(predicate, ct);
+    //public async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
+    //    => await _dbSet.AnyAsync(predicate, ct);
 
     // If your Controller/Service layer calls FindAsync to look up a record with the intention of modifying or deleting it right after,
     // .AsNoTracking() will cause _context.SaveChanges() to ignore those edits.
-    public async Task<IReadOnlyList<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
-        => await _dbSet.Where(predicate).AsNoTracking().ToListAsync(ct);
+    //public async Task<IReadOnlyList<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
+    //    => await _dbSet.Where(predicate).AsNoTracking().ToListAsync(ct);
 
-    public async Task<IReadOnlyList<TEntity>> FindTrackedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
-        => await _dbSet.Where(predicate).ToListAsync(ct);
+    //public async Task<IReadOnlyList<TEntity>> FindTrackedAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
+    //    => await _dbSet.Where(predicate).ToListAsync(ct);
 
 
 
@@ -109,6 +109,18 @@ public class Repository<TEntity>(GymAppDbContext dbContext) : IRepository<TEntit
 
     public void Update(TEntity entity, CancellationToken ct = default)
         => _dbSet.Update(entity);
+
+
+
+    public async Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken ct = default)
+    {
+        var query = _dbSet.AsQueryable();
+
+        if (predicate is not null)
+            query = query.Where(predicate);
+
+        return await query.CountAsync(ct);
+    }
 
 
 

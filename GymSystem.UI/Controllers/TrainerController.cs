@@ -1,5 +1,5 @@
 ﻿using GymSystem.Domain.DTOs.Trainer;
-using GymSystem.Domain.Services;
+using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Entities.Enums;
 using GymSystem.UI.ViewModels.Trainer;
 using Microsoft.AspNetCore.Mvc;

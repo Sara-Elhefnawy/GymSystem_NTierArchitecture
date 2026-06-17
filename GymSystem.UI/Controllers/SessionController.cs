@@ -1,5 +1,5 @@
 ﻿using GymSystem.Domain.DTOs.Session;
-using GymSystem.Domain.Services;
+using GymSystem.Domain.Services.Interfaces;
 using GymSystem.UI.ViewModels.Session;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;

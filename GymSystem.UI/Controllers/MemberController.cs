@@ -1,6 +1,6 @@
 ﻿using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
-using GymSystem.Domain.Services;
+using GymSystem.Domain.Services.Interfaces;
 using GymSystem.UI.ViewModels.Member;
 using Microsoft.AspNetCore.Mvc;
 

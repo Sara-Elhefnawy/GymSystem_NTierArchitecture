@@ -1,6 +1,7 @@
 ﻿using GymSystem.Domain.Common;
 using GymSystem.Domain.DTOs.Session;
 using GymSystem.Domain.DTOs.Session.Enums;
+using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
 using GymSystem.Infrastructure.QueryService;

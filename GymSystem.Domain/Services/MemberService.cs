@@ -1,6 +1,7 @@
 ﻿using GymSystem.Domain.Common;
 using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
+using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Entities.Enums;
 using GymSystem.Infrastructure.UnitOfWorks;

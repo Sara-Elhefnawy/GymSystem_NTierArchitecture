@@ -1,7 +1,7 @@
 ﻿using GymSystem.Domain.Common;
 using GymSystem.Domain.DTOs.Session;
 
-namespace GymSystem.Domain.Services;
+namespace GymSystem.Domain.Services.Interfaces;
 
 public interface ISessionService
 {

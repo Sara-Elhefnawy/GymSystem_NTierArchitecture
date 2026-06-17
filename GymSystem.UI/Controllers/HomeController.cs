@@ -1,15 +1,35 @@
+using GymSystem.Domain.Services;
 using GymSystem.Infrastructure.Data;
 using GymSystem.UI.ViewModels;
+using GymSystem.UI.ViewModels.Home;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
 namespace GymSystem.UI.Controllers;
 
-public class HomeController(GymAppDbContext context) : Controller
+public class HomeController(GymAppDbContext context, IDashboardService dashboard) : Controller
 {
-    public IActionResult Index()
+    public async Task<IActionResult> Index(CancellationToken ct)
     {
-        return View();
+        var result = await dashboard.GetHomeStatisticsAsync(ct);
+
+        if (result.IsFailure)
+        {
+            TempData["Error"] = "Unable to load statistics. Please try again.";
+            return View(new List<DashboardHomeViewModel>());
+        }
+
+        var viewModels = new DashboardHomeViewModel
+        {
+            ActiveMembers = result.Value.ActiveMembers,
+            CompletedSessions = result.Value.CompletedSessions,
+            OngoingSessions = result.Value.OngoingSessions,
+            UpcomingSessions = result.Value.UpcomingSessions,
+            TotalMembers = result.Value.TotalMembers,
+            TotalTrainers = result.Value.TotalTrainers
+        };
+
+        return View(viewModels);
     }
 
     public IActionResult Privacy()

@@ -2,7 +2,7 @@
 using GymSystem.Domain.DTOs.Session.Lookups;
 using GymSystem.Domain.DTOs.Trainer;
 
-namespace GymSystem.Domain.Services;
+namespace GymSystem.Domain.Services.Interfaces;
 
 public interface ITrainerService
 {

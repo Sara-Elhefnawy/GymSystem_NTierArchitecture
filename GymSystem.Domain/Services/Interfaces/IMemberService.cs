@@ -2,7 +2,7 @@
 using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
 
-namespace GymSystem.Domain.Services;
+namespace GymSystem.Domain.Services.Interfaces;
 
 public interface IMemberService
 {

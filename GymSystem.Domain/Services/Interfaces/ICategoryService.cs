@@ -1,7 +1,7 @@
 ﻿using GymSystem.Domain.Common;
 using GymSystem.Domain.DTOs.Category;
 
-namespace GymSystem.Domain.Services;
+namespace GymSystem.Domain.Services.Interfaces;
 
 public interface ICategoryService
 {

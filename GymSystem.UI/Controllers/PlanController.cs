@@ -1,5 +1,5 @@
 ﻿using GymSystem.Domain.DTOs.Plan;
-using GymSystem.Domain.Services;
+using GymSystem.Domain.Services.Interfaces;
 using GymSystem.UI.ViewModels.Plan;
 using Microsoft.AspNetCore.Mvc;
 
