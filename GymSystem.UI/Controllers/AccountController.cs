@@ -1,5 +1,6 @@
 ﻿using GymSystem.Infrastructure.Identities;
 using GymSystem.UI.ViewModels.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,14 +9,20 @@ namespace GymSystem.UI.Controllers;
 [Route("Account")]
 public class AccountController(SignInManager<ApplicationUser> signInManager) : Controller
 {
-    [HttpGet("")]
-    public IActionResult Login()
+    // returnUrl to prevent user write Account/Login after being loggedin
+    [HttpGet("Login")]
+    [AllowAnonymous]
+    public IActionResult Login(string? returnUrl = null)
     {
-        return View();
+        if (User.Identity?.IsAuthenticated == true)
+            return RedirectToAction(nameof(HomeController.Index), "Home");
+
+        return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 
-    [HttpPost("")]
+    [HttpPost("Login")]
     [ValidateAntiForgeryToken]
+    [AllowAnonymous]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         if (!ModelState.IsValid)
@@ -35,8 +42,26 @@ public class AccountController(SignInManager<ApplicationUser> signInManager) : C
             return View(model);
         }
 
-        Console.WriteLine("Login successful! Redirecting to Home/Index");
+        if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+            return Redirect(model.ReturnUrl);
+
         TempData["Success"] = "Login successful!";
         return RedirectToAction(nameof(HomeController.Index), "Home");
+    }
+
+    [HttpPost("Logout")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Logout()
+    {
+        await signInManager.SignOutAsync();
+
+        TempData["Success"] = "You have been logged out successfully.";
+        return RedirectToAction(nameof(Login));
+    }
+
+    [HttpGet("AccessDenied")]
+    public IActionResult AccessDenied()
+    {
+        return View();
     }
 }

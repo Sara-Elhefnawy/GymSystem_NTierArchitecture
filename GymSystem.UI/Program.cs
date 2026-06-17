@@ -27,6 +27,9 @@ app.UseStaticFiles();
 app.UseRouting();
 app.MapDefaultControllerRoute();
 
+app.UseAuthentication();   // decrypt cookie and create the ClaimPrincipal(User)
+app.UseAuthorization();
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

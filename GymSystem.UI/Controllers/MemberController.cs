@@ -2,11 +2,13 @@
 using GymSystem.Domain.DTOs.Member;
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.UI.ViewModels.Member;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymSystem.UI.Controllers;
 
 [Route("Member")]
+[Authorize(Roles ="SuperAdmin")]
 public class MemberController(IMemberService members) : Controller
 {
     [HttpGet("")]

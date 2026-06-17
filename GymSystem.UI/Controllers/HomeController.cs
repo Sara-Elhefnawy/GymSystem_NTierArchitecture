@@ -1,13 +1,14 @@
 using GymSystem.Domain.Services;
-using GymSystem.Infrastructure.Data;
 using GymSystem.UI.ViewModels;
 using GymSystem.UI.ViewModels.Home;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
 namespace GymSystem.UI.Controllers;
 
-public class HomeController(GymAppDbContext context, IDashboardService dashboard) : Controller
+[AllowAnonymous]
+public class HomeController(IDashboardService dashboard) : Controller
 {
     public async Task<IActionResult> Index(CancellationToken ct)
     {
