@@ -1,0 +1,174 @@
+﻿@model IReadOnlyList<IndexMembershipViewModel>
+
+@{
+    ViewData["Title"] = "Active Memberships";
+}
+
+<div class="container-fluid">
+    <header class="bg-primary text-white rounded-3 p-4 shadow-sm mt-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1 fw-semibold">Active Memberships</h2>
+                <p class="mb-0 text-light opacity-75">Members That have Active Plans</p>
+            </div>
+            <div class="text-end">
+                <a asp-action="Create" class="btn btn-light">
+                    <i class="fas fa-plus me-1"></i> New Membership
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Member</th>
+                                <th>Plan</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="@Url.Action("GetPhoto", "Member", new { id = item.MemberId })"
+                                                      class="rounded-circle"
+                                                      style="width:40px;height:40px;object-fit:cover;"
+                                                      onerror="this.src='/images/User.png'" />
+                                            <div class="avatar-circle me-2"
+                                                 style="width: 40px; height: 40px; background-color: #e9ecef; border-radius: 50%; display: none; align-items: center; justify-content: center; flex-shrink: 0;">
+                                                <span style="font-weight: 600; color: #495057; font-size: 16px;">
+                                                    @item.MemberName.Substring(0, 1).ToUpper()
+                                                </span>
+                                            </div>
+                                            @item.MemberName
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@item.PlanName</span>
+                                    </td>
+                                    <td>@item.StartDate.ToString("MMM dd, yyyy")</td>
+                                    <td>@item.EndDate.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        @if (item.EndDate > DateOnly.FromDateTime(DateTime.Now))
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle-fill me-1"></i> Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle-fill me-1"></i> Expired
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (item.EndDate > DateOnly.FromDateTime(DateTime.Now))
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#deleteModal"
+                                                    data-memberid="@item.MemberId"
+                                                    data-membername="@item.MemberName">
+                                                <i class="fas fa-times"></i> Cancel
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Expired</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-person-workspace display-1 text-muted"></i>
+                    <h4 class="mt-3 text-muted">No Active Memberships Available</h4>
+                    <p class="text-muted">Create a new membership to get started</p>
+                    <a asp-action="Create" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus me-1"></i> Create Membership
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Cancel Membership
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel the membership for <strong id="memberNameDisplay"></strong>?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <form asp-action="Cancel" asp-controller="Membership" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="deleteMemberId" />
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> Yes, Cancel Membership
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        background-color: #e9ecef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #495057;
+        flex-shrink: 0;
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function() {
+            // Handle delete modal
+            $('#deleteModal').on('show.bs.modal', function(event) {
+                var button = $(event.relatedTarget);
+                var memberId = button.data('memberid');
+                var memberName = button.data('membername');
+
+                var modal = $(this);
+                modal.find('#deleteMemberId').val(memberId);
+                modal.find('#memberNameDisplay').text(memberName);
+            });
+        });
+    </script>
+}

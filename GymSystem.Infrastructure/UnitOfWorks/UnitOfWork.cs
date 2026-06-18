@@ -1,6 +1,6 @@
 ﻿using GymSystem.Infrastructure.Data;
-using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.Repositories;
+using GymSystem.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace GymSystem.Infrastructure.UnitOfWorks;
@@ -17,6 +17,7 @@ public sealed class UnitOfWork : IUnitOfWork
     private IBookingRepository? _bookings;
     private ITrainerRepository? _trainers;
     private ICategoryRepository? _categories;
+    private IMembershipRepository? _memberships;
 
 
     public UnitOfWork(GymAppDbContext dbContext)
@@ -44,6 +45,9 @@ public sealed class UnitOfWork : IUnitOfWork
 
     public IHealthRecordRepository HealthRecords
         => _healthRecords ??= new HealthRecordRepository(_dbContext);
+
+    public IMembershipRepository Memberships
+        => _memberships ??= new MembershipRepository(_dbContext);
 
     public async Task<int> SaveChangesAsync(CancellationToken ct = default) 
         => await _dbContext.SaveChangesAsync(ct);

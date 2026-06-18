@@ -1,5 +1,6 @@
 ﻿using GymSystem.Infrastructure.Data;
 using GymSystem.Infrastructure.Entities;
+using GymSystem.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymSystem.Infrastructure.Repositories;
@@ -17,9 +18,9 @@ public class MemberRepository(GymAppDbContext dbContext) : Repository<Member>(db
             .ThenInclude(ms => ms.Plan)
             .FirstOrDefaultAsync(m => m.Id == id, ct);
 
-    public async Task<Member?> GetWithHealthRecordAsync(int id, CancellationToken ct = default)
-        => await _dbSet.Include(m => m.HealthRecord)
-            .FirstOrDefaultAsync(m => m.Id == id, ct);
+    //public async Task<Member?> GetWithHealthRecordAsync(int id, CancellationToken ct = default)
+    //    => await _dbSet.Include(m => m.HealthRecord)
+    //        .FirstOrDefaultAsync(m => m.Id == id, ct);
 
     public async Task<bool> IsEmailTakenAsync(string normalizedEmail, int? excludeMemberId = null, CancellationToken ct = default)
         => await _dbSet.AnyAsync(m => m.Email == normalizedEmail && (!excludeMemberId.HasValue || m.Id != excludeMemberId.Value), ct);

@@ -1,5 +1,6 @@
 ﻿using GymSystem.Infrastructure.Data;
 using GymSystem.Infrastructure.Entities;
+using GymSystem.Infrastructure.Repositories.Interfaces;
 
 namespace GymSystem.Infrastructure.Repositories;
 

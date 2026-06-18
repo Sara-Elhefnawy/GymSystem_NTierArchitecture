@@ -1,4 +1,4 @@
-﻿using GymSystem.Infrastructure.Repositories;
+﻿using GymSystem.Infrastructure.Repositories.Interfaces;
 
 namespace GymSystem.Infrastructure.UnitOfWorks;
 
@@ -17,6 +17,8 @@ public interface IUnitOfWork : IDisposable
     ITrainerRepository Trainers { get; }
 
     ICategoryRepository Categories { get; }
+
+    IMembershipRepository Memberships { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

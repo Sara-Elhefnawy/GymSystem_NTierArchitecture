@@ -1,0 +1,67 @@
+﻿@model CreateMembershipViewModel
+
+@{
+    ViewData["Title"] = "Create Membership";
+}
+
+<h1>Create Membership</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Membership Information</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="MemberId" class="form-label">Member</label>
+                        <select asp-for="MemberId" class="form-select" asp-items="ViewBag.Members">
+                            <option value="">-- Select Member --</option>
+                        </select>
+                        <span asp-validation-for="MemberId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PlanId" class="form-label">Plan</label>
+                        <select asp-for="PlanId" class="form-select" asp-items="ViewBag.Plans">
+                            <option value="">-- Select Plan --</option>
+                        </select>
+                        <span asp-validation-for="PlanId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Membership
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function() {
+            $('#MemberId').select2({
+                placeholder: "Select a member",
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#PlanId').select2({
+                placeholder: "Select a plan",
+                allowClear: true,
+                width: '100%'
+            });
+        });
+    </script>
+}

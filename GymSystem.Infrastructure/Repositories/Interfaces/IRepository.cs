@@ -1,7 +1,7 @@
 ﻿using GymSystem.Infrastructure.Entities;
 using System.Linq.Expressions;
 
-namespace GymSystem.Infrastructure.Repositories;
+namespace GymSystem.Infrastructure.Repositories.Interfaces;
 
 public interface IRepository<TEntity> where TEntity : BaseEntity
 {
