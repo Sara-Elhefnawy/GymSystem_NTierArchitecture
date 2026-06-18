@@ -22,6 +22,4 @@ public interface ITrainerService
     Task<Result<DeleteTrainerDTO>> GetForDeleteAsync(int id, CancellationToken ct = default);
 
     Task<Result> DeleteAsync(int id, CancellationToken ct = default);
-
-    Task<IReadOnlyList<TrainerLookupDTO>> GetTrainerLookupAsync(CancellationToken ct = default);
 }

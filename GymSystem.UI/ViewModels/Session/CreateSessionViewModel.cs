@@ -28,6 +28,5 @@ public class CreateSessionViewModel
     [DataType(DataType.DateTime)]
     public DateTime EndDate { get; set; } = DateTime.Now.AddHours(1);
 
-    public SelectList? CategoryList { get; set; }
     public SelectList? TrainerList { get; set; }
 }

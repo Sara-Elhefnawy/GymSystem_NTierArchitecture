@@ -218,4 +218,47 @@ public class AttachmentService : IAttachmentService
             return Result.Fail("Invalid image");
         }
     }
+
+    /// Saves byte content directly to the attachments folder
+    /// Used for QR codes and other generated content
+    public async Task<Result<string>> SaveBytesAsync(byte[] content, string fileName, string category, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Saving byte content to category: {Category}, FileName: {FileName}", category, fileName);
+
+        try
+        {
+            if (content == null || content.Length == 0)
+            {
+                return Result.Fail<string>("File content cannot be empty");
+            }
+
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return Result.Fail<string>("File name cannot be empty");
+            }
+
+            // Ensure the directory exists
+            var directory = Path.Combine(_hostEnvironment.ContentRootPath, category);
+            Directory.CreateDirectory(directory);
+
+            // Build the full path
+            var fullPath = Path.Combine(directory, fileName);
+
+            // Write the bytes to disk
+            await File.WriteAllBytesAsync(fullPath, content, ct);
+
+            // Return the relative path
+            var relativePath = Path.Combine(category, fileName).Replace('\\', '/');
+
+            _logger.LogInformation("Byte content saved successfully: {RelativePath} (Size: {Size} bytes)",
+                relativePath, content.Length);
+
+            return Result.Ok(relativePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving byte content: {FileName} in category: {Category}", fileName, category);
+            return Result.Fail<string>($"Error saving file: {ex.Message}");
+        }
+    }
 }

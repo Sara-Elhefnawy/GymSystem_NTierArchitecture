@@ -18,6 +18,9 @@
             <a asp-action="Create" asp-route-id="@sessionId" class="btn btn-fill fw-medium rounded-pill px-4 py-3">
                 <i class="bi bi-plus-lg me-2"></i>Add Booking
             </a>
+            <a asp-action="Scan" asp-controller="CheckIn" class="btn btn-success ms-2">
+                <i class="bi bi-qr-code-scan me-1"></i> Scan QR
+            </a>
         </div>
     </header>
 
@@ -31,6 +34,7 @@
                             <tr>
                                 <th class="ps-4">#</th>
                                 <th>Member</th>
+                                <th>QR Code</th>
                                 <th>Booking Date</th>
                                 <th>Status</th>
                                 <th class="text-center pe-4">Actions</th>
@@ -53,12 +57,25 @@
                                             <span class="ms-2 fw-medium">@item.MemberName</span>
                                         </div>
                                     </td>
+                                    <td>
+                                        <!-- QR Code thumbnail - click to view full size -->
+                                        <a href="@Url.Action("QrCode", "Member", new { id = item.MemberId })"
+                                           target="_blank"
+                                           class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-qr-code me-1"></i> View QR
+                                        </a>
+                                    </td>
                                     <td>@(item.BookingDate?.ToString("MMM dd, yyyy hh:mm tt") ?? "N/A")</td>
                                     <td>
                                         @if (item.IsAttended)
                                         {
                                             <span class="badge bg-success">
                                                 <i class="bi bi-check-circle-fill me-1"></i> Attended
+                                                @if (item.AttendanceMarkedAt.HasValue)
+                                                {
+                                                    <br />
+                                                    <small>@item.AttendanceMarkedAt.Value.ToString("hh:mm tt")</small>
+                                                }
                                             </span>
                                         }
                                         else

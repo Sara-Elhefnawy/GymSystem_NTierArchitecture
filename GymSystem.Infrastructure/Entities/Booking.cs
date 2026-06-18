@@ -17,4 +17,6 @@ public class Booking : BaseEntity
 
     public int SessionId { get; set; }
     public Session Session { get; set; } = default!;
+
+    public DateTime? AttendanceMarkedAt { get; set; }
 }

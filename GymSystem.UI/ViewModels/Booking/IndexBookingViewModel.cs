@@ -2,12 +2,14 @@
 
 public class IndexBookingViewModel
 {
-    //public int SessionId { get; set; }
-    public string? SessionName { get; set; }
-    //public int MemberId { get; set; }
-    public string MemberName { get; set; } = default!;
-
-    public DateTime BookingDate { get; set; }
-
-    public bool IsAttended { get; set; }
+    public int Id { get; set; }
+    public string CategoryName { get; set; } = default!;
+    public string Description { get; set; } = default!;
+    public string TrainerName { get; set; } = default!;
+    public string DateDisplay { get; set; } = default!;
+    public string TimeRangeDisplay { get; set; } = default!;
+    public string Duration { get; set; } = default!;
+    public int Capacity { get; set; }
+    public int AvailableSlots { get; set; }
+    public string Status { get; set; } = default!;
 }

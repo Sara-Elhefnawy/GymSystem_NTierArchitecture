@@ -264,7 +264,7 @@ public class TrainerService : ITrainerService
             return Result.Fail("Trainer not found", "TRAINER_NOT_FOUND");
         }
 
-        if (await _uow.Sessions.HasUpcomingSessionsForTrainerAsync(id, DateTime.UtcNow, ct))
+        if (await _uow.Sessions.HasUpcomingSessionsForTrainerAsync(id, DateTime.Now, ct))
         {
             _logger.LogWarning("Cannot delete trainer with ID: {Id} because they have upcoming sessions", id);
             return Result.Fail("Cannot delete trainer with upcoming sessions", "UPCOMING_SESSIONS_EXIST");
@@ -319,16 +319,5 @@ public class TrainerService : ITrainerService
         var age = today.Year - dateOfBirth.Year;
         if (dateOfBirth > today.AddYears(-age)) age--;
         return age;
-    }
-
-    public async Task<IReadOnlyList<TrainerLookupDTO>> GetTrainerLookupAsync(CancellationToken ct = default)
-    {
-        var trainers = await _uow.Trainers.GetAllAsync(ct);
-
-        return trainers.Select(t => new TrainerLookupDTO
-        {
-            Id = t.Id,
-            Name = t.Name
-        }).ToList();
     }
 }

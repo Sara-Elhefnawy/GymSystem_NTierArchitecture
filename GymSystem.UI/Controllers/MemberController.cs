@@ -1,6 +1,8 @@
 ﻿using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
+using GymSystem.Domain.QRCode;
 using GymSystem.Domain.Services.Interfaces;
+using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Member;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,8 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace GymSystem.UI.Controllers;
 
 [Route("Member")]
-[Authorize(Roles ="SuperAdmin")]
-public class MemberController(IMemberService members) : Controller
+[Authorize(Roles = "SuperAdmin")]
+public class MemberController(IMemberService members, ISessionService sessions, IQrService qrService) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken ct = default)
@@ -18,7 +20,7 @@ public class MemberController(IMemberService members) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = "Unable to load members. Please try again.";
+            this.HandleErrorResult(result);
             return View(new List<IndexMemberViewModel>());
         }
 
@@ -82,44 +84,8 @@ public class MemberController(IMemberService members) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Handle specific error cases
-        switch (result.ErrorKey)
-        {
-            case "EMAIL_TAKEN":
-                ModelState.AddModelError("Email", "This email is already registered");
-                TempData["Warning"] = "This email is already registered to another member. Please use a different email.";
-                break;
-
-            case "PHONE_TAKEN":
-                ModelState.AddModelError("Phone", "This phone number is already registered");
-                TempData["Warning"] = "This phone number is already registered to another member. Please use a different number.";
-                break;
-
-            case "INVALID_AGE":
-                ModelState.AddModelError("DateOfBirth", "Age must be between 12 and 120 years");
-                TempData["Warning"] = "Age must be between 12 and 120 years.";
-                break;
-
-            case "INVALID_NAME":
-                ModelState.AddModelError("Name", "Name can only contain letters, spaces, hyphens, and apostrophes");
-                TempData["Warning"] = "Name contains invalid characters. Use only letters, spaces, hyphens, and apostrophes.";
-                break;
-
-            case "INVALID_GENDER":
-                ModelState.AddModelError("Gender", "Please select a valid gender");
-                TempData["Warning"] = "Please select a valid gender option.";
-                break;
-
-            case "INVALID_BLOOD_TYPE":
-                ModelState.AddModelError("HealthRecord.BloodType", "Please select a valid blood type");
-                TempData["Warning"] = "Please select a valid blood type from the list.";
-                break;
-
-            default:
-                ModelState.AddModelError(string.Empty, result.Error);
-                TempData["Error"] = result.Error;
-                break;
-        }
+        // Use the error handler for both ModelState and TempData
+        this.HandleErrorResult(result, ModelState);
 
         // Clear the photo from the model so it doesn't try to re-upload
         model.Photo = null;
@@ -132,27 +98,24 @@ public class MemberController(IMemberService members) : Controller
     {
         try
         {
-            // First get the member to get the photo path
             var memberResult = await members.GetDetailsAsync(id, ct);
             if (memberResult.IsFailure || string.IsNullOrEmpty(memberResult.Value.Photo))
             {
                 return File("~/images/User.png", "image/png");
             }
 
-            // Get the photo stream from attachment service
             var photoResult = await members.GetMemberPhotoAsync(id, ct);
             if (photoResult.IsFailure)
             {
                 return File("~/images/User.png", "image/png");
             }
 
-            // Determine content type from the stored path
             var contentTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { ".jpg", "image/jpeg" },
-            { ".jpeg", "image/jpeg" },
-            { ".png", "image/png" }
-        };
+            {
+                { ".jpg", "image/jpeg" },
+                { ".jpeg", "image/jpeg" },
+                { ".png", "image/png" }
+            };
 
             var extension = Path.GetExtension(memberResult.Value.Photo).ToLowerInvariant();
             var contentType = contentTypes.TryGetValue(extension, out var value) ? value : "image/jpeg";
@@ -172,7 +135,7 @@ public class MemberController(IMemberService members) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Index));
         }
 
@@ -213,7 +176,7 @@ public class MemberController(IMemberService members) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Index));
         }
 
@@ -227,7 +190,6 @@ public class MemberController(IMemberService members) : Controller
             Street = result.Value.Street
         };
 
-        // Load Name and Photo from a separate call or modify GetForEditAsync to include them
         var memberDetails = await members.GetDetailsAsync(id, ct);
         if (memberDetails.IsSuccess)
         {
@@ -245,13 +207,11 @@ public class MemberController(IMemberService members) : Controller
         if (id != model.Id)
             return NotFound();
 
-        // Remove Name and Photo from validation since they're not editable
         ModelState.Remove("Name");
         ModelState.Remove("Photo");
 
         if (!ModelState.IsValid)
         {
-            // Need to reload Name and Photo for the view
             var memberDetailss = await members.GetDetailsAsync(id);
             if (memberDetailss.IsSuccess)
             {
@@ -279,41 +239,9 @@ public class MemberController(IMemberService members) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Handle different error types
-        switch (result.ErrorKey)
-        {
-            case "EMAIL_TAKEN":
-                ModelState.AddModelError("Email", "This email is already registered");
-                TempData["Warning"] = "The email address is already registered to another member. Please use a different email.";
-                break;
+        // Use the error handler for both ModelState and TempData
+        this.HandleErrorResult(result, ModelState);
 
-            case "PHONE_TAKEN":
-                ModelState.AddModelError("Phone", "This phone number is already registered");
-                TempData["Warning"] = "The phone number you entered is already registered to another member. Please use a different number.";
-                break;
-
-            case "MEMBER_NOT_FOUND":
-                ModelState.AddModelError(string.Empty, "Member not found");
-                TempData["Error"] = "Member not found. It may have been deleted.";
-                break;
-
-            case "UPDATE_ERROR":
-                ModelState.AddModelError(string.Empty, "Failed to update member. Please try again.");
-                TempData["Error"] = "Failed to update member. Please try again.";
-                break;
-
-            case "INTERNAL_ERROR":
-            case "DATABASE_ERROR":
-                ModelState.AddModelError(string.Empty, "A system error occurred. Please try again later.");
-                TempData["Error"] = "A system error occurred. Please try again later.";
-                break;
-
-            default:
-                ModelState.AddModelError(string.Empty, result.Error);
-                break;
-        }
-
-        // Reload Name and Photo for the view
         var memberDetails = await members.GetDetailsAsync(id);
         if (memberDetails.IsSuccess)
         {
@@ -331,7 +259,7 @@ public class MemberController(IMemberService members) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Index));
         }
 
@@ -353,11 +281,33 @@ public class MemberController(IMemberService members) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Delete), new { id });
         }
 
         TempData["Success"] = "Member deleted successfully!";
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet("QrCode/{id:int}")]
+    [ResponseCache(Duration = 3600)]
+    public async Task<IActionResult> QrCode(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            var memberResult = await members.GetDetailsAsync(id, ct);
+            if (memberResult.IsFailure)
+                return NotFound($"Member with ID {id} not found");
+
+            var qrResult = await qrService.GenerateMemberQrPngAsync(id, ct);
+            if (qrResult.IsFailure)
+                return BadRequest("Failed to generate QR code");
+
+            return File(qrResult.Value, "image/png");
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "An error occurred while generating the QR code");
+        }
     }
 }

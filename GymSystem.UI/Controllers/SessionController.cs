@@ -1,5 +1,6 @@
 ﻿using GymSystem.Domain.DTOs.Session;
 using GymSystem.Domain.Services.Interfaces;
+using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Session;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -19,7 +20,7 @@ public class SessionController(
 
         if (result.IsFailure)
         {
-            TempData["Error"] = "Unable to load sessions. Please try again.";
+            this.HandleErrorResult(result);
             return View(new List<IndexSessionViewModel>());
         }
 
@@ -40,7 +41,6 @@ public class SessionController(
         return View(viewModels);
     }
 
-    // Step 1: Choose category first
     [HttpGet("ChooseCategory")]
     public async Task<IActionResult> ChooseCategory()
     {
@@ -48,11 +48,9 @@ public class SessionController(
         return View(categoriesList);
     }
 
-    // Step 2: Create session for specific category
     [HttpGet("Create/{categoryId:int}")]
     public async Task<IActionResult> Create(int categoryId, CancellationToken ct)
     {
-        // Verify category exists
         var categoryResult = await categories.GetAllAsync();
         var category = categoryResult.Value?.FirstOrDefault(c => c.Id == categoryId);
 
@@ -62,13 +60,12 @@ public class SessionController(
             return RedirectToAction(nameof(ChooseCategory));
         }
 
-        // Get trainers that match this category's specialty
         var availableTrainers = await GetTrainersByCategoryNameSelectList(category.Name);
 
         var viewModel = new CreateSessionViewModel
         {
             CategoryId = categoryId,
-            CategoryName = category.Name,  // Display only
+            CategoryName = category.Name,
             TrainerList = availableTrainers,
             Capacity = 25,
             StartDate = DateTime.Now,
@@ -119,41 +116,8 @@ public class SessionController(
             return RedirectToAction(nameof(Index));
         }
 
-        switch (result.ErrorKey)
-        {
-            case "INVALID_DATE_RANGE":
-                ModelState.AddModelError("", "End date must be after start date");
-                TempData["Warning"] = "End date must be after start date";
-                break;
-            case "PAST_START_DATE":
-                ModelState.AddModelError("StartDate", "Start date must be in the future");
-                TempData["Warning"] = "Start date must be in the future";
-                break;
-            case "INVALID_CAPACITY":
-                ModelState.AddModelError("Capacity", "Capacity must be between 1 and 25");
-                TempData["Warning"] = "Capacity must be between 1 and 25";
-                break;
-            case "SPECIALTY_MISMATCH":
-                ModelState.AddModelError("TrainerId", result.Error);
-                TempData["Warning"] = "Session's trainer has specialty mismatch";
-                break;
-            case "TRAINER_CONFLICT":
-                ModelState.AddModelError("TrainerId", result.Error);
-                TempData["Warning"] = "Session's trainer has conflict";
-                break;
-            case "CATEGORY_NOT_FOUND":
-                ModelState.AddModelError("CategoryId", "Selected category does not exist");
-                TempData["Warning"] = "Selected category does not exist";
-                break;
-            case "TRAINER_NOT_FOUND":
-                ModelState.AddModelError("TrainerId", "Selected trainer does not exist");
-                TempData["Warning"] = "Selected trainer does not exist";
-                break;
-            default:
-                ModelState.AddModelError("", result.Error ?? "Failed to create session");
-                TempData["Warning"] = "Failed to create session";
-                break;
-        }
+        // Use the error handler
+        this.HandleErrorResult(result, ModelState);
 
         var categoryData = await categories.GetAllAsync(ct);
         var categoryInfo = categoryData.Value?.FirstOrDefault(c => c.Id == categoryId);
@@ -170,7 +134,7 @@ public class SessionController(
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Index));
         }
 
@@ -197,14 +161,14 @@ public class SessionController(
 
         if (detailsResult.IsFailure)
         {
-            TempData["Error"] = detailsResult.Error;
+            this.HandleErrorResult(detailsResult);
             return RedirectToAction(nameof(Index));
         }
 
         var editResult = await sessions.GetForEditAsync(id, ct);
         if (editResult.IsFailure)
         {
-            TempData["Error"] = editResult.Error;
+            this.HandleErrorResult(editResult);
             return RedirectToAction(nameof(Index));
         }
 
@@ -242,49 +206,43 @@ public class SessionController(
             model.Id = id;
         }
 
-        // Remove non-editable fields from validation
         ModelState.Remove("CategoryName");
         ModelState.Remove("MaxCapacity");
         ModelState.Remove("Status");
         ModelState.Remove("CanEdit");
-        //ModelState.Remove("Id");
 
-        // Get the session details for error handling and model population
         var detailsResult = await sessions.GetDetailsAsync(id, ct);
 
         if (detailsResult.IsFailure)
         {
-            TempData["Error"] = detailsResult.Error;
+            this.HandleErrorResult(detailsResult);
             return RedirectToAction(nameof(Index));
         }
 
-        // Ensure model has the required data
         if (model == null)
         {
             model = new EditSessionViewModel();
         }
 
-        // Populate non-editable fields from the session details
         model.CategoryName = detailsResult.Value.CategoryName;
         model.MaxCapacity = detailsResult.Value.Capacity;
         model.Status = detailsResult.Value.Status.ToString();
         model.CanEdit = detailsResult.Value.StartDate > DateTime.Now;
 
-        // Check if session is editable
         if (!model.CanEdit)
         {
             ModelState.AddModelError("", "This session has already started and cannot be edited");
             TempData["Error"] = "Cannot edit sessions that have already started";
 
             var trainers = await GetTrainersByCategoryNameSelectList(model.CategoryName);
-            model.TrainerList = trainers; // Ensure this is set
+            model.TrainerList = trainers;
             return View(model);
         }
 
         if (!ModelState.IsValid)
         {
             var trainers = await GetTrainersByCategoryNameSelectList(model.CategoryName);
-            model.TrainerList = trainers; // Ensure this is set
+            model.TrainerList = trainers;
             return View(model);
         }
 
@@ -305,48 +263,11 @@ public class SessionController(
             return RedirectToAction(nameof(Index));
         }
 
-        // Handle specific errors
-        switch (result.ErrorKey)
-        {
-            case "SESSION_NOT_FOUND":
-                TempData["Error"] = "Session not found";
-                return RedirectToAction(nameof(Index));
-            case "SESSION_NOT_EDITABLE":
-                ModelState.AddModelError("", "This session has already started and cannot be edited");
-                TempData["Warning"] = "This session has already started and cannot be edited";
-                model.CanEdit = false;
-                break;
-            case "INVALID_DATE_RANGE":
-                ModelState.AddModelError("", "End date must be after start date");
-                TempData["Warning"] = "End date must be after start date";
-                break;
-            case "PAST_START_DATE":
-                ModelState.AddModelError("StartDate", "Start date must be in the future");
-                TempData["Warning"] = "Start date must be in the future";
-                break;
-            case "TRAINER_NOT_FOUND":
-                ModelState.AddModelError("TrainerId", "Selected trainer does not exist");
-                TempData["Warning"] = "Selected trainer does not exist";
-                break;
-            case "SPECIALTY_MISMATCH":
-                ModelState.AddModelError("TrainerId", result.Error);
-                TempData["Warning"] = "This session has specialty mismatch issue";
-                break;
-            case "TRAINER_CONFLICT":
-                ModelState.AddModelError("TrainerId", result.Error);
-                TempData["Warning"] = "This session has trainer conflict issue";
-                break;
-            default:
-                ModelState.AddModelError("", result.Error ?? "Failed to update session");
-                TempData["Warning"] = "Failed to update session";
-                break;
-        }
+        // Use the error handler
+        this.HandleErrorResult(result, ModelState);
 
-        // Ensure the trainer list is always set before returning the view
         var availableTrainers = await GetTrainersByCategoryNameSelectList(model.CategoryName);
         model.TrainerList = availableTrainers;
-
-        // Ensure Status and CanEdit are set
         model.Status = detailsResult.Value.Status.ToString();
         model.CanEdit = detailsResult.Value.StartDate > DateTime.Now;
 
@@ -360,7 +281,7 @@ public class SessionController(
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Index));
         }
 
@@ -389,6 +310,8 @@ public class SessionController(
 
         if (result.IsFailure)
         {
+            this.HandleErrorResult(result);
+
             var getResult = await sessions.GetForDeleteAsync(id, ct);
             if (getResult.IsSuccess)
             {
@@ -406,11 +329,9 @@ public class SessionController(
                     CanDelete = getResult.Value.CanDelete
                 };
 
-                TempData["Error"] = result.Error;
                 return View("Delete", viewModel);
             }
 
-            TempData["Error"] = result.Error;
             return RedirectToAction(nameof(Delete), new { id });
         }
 
@@ -429,8 +350,8 @@ public class SessionController(
                 "CrossFit" => "CrossFit",
                 "Boxing" => "Boxing",
                 "Bodybuilding" => "Bodybuilding",
-                "General Fitness" => "GeneralFitness",
-                "Personal Training" => "PersonalTraining",
+                "GeneralFitness" => "GeneralFitness",
+                "PersonalTraining" => "PersonalTraining",
                 _ => ""
             };
 
@@ -459,7 +380,6 @@ public class SessionController(
         }
     }
 
-    // Helper Methods
     private async Task<SelectList> GetCategorySelectList()
     {
         var result = await categories.GetAllAsync();

@@ -1,10 +1,11 @@
 ﻿using GymSystem.Domain.DTOs.Plan;
 using GymSystem.Domain.Services.Interfaces;
+using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Plan;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymSystem.UI.Controllers;
-
 
 [Route("Plan")]
 public class PlanController(IPlanService plans) : Controller
@@ -16,7 +17,7 @@ public class PlanController(IPlanService plans) : Controller
 
         if (!result.IsSuccess)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return View(new List<IndexPlanViewModel>());
         }
 
@@ -40,7 +41,7 @@ public class PlanController(IPlanService plans) : Controller
 
         if (!result.IsSuccess)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Index));
         }
 
@@ -58,13 +59,14 @@ public class PlanController(IPlanService plans) : Controller
     }
 
     [HttpGet("Edit/{id:int}")]
+    [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
     {
         var result = await plans.GetForEditAsync(id, ct);
 
         if (!result.IsSuccess)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return NotFound();
         }
 
@@ -76,7 +78,6 @@ public class PlanController(IPlanService plans) : Controller
             Price = result.Value.Price
         };
 
-        // Load Name from a separate call or modify GetForEditAsync to include them
         var planDetails = await plans.GetDetailsAsync(id, ct);
         if (planDetails.IsSuccess)
         {
@@ -88,17 +89,16 @@ public class PlanController(IPlanService plans) : Controller
 
     [HttpPost("Edit/{id:int}")]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> Edit(int id, EditPlanDTO model, CancellationToken ct)
     {
         if (id != model.Id)
             return NotFound();
 
-        // Remove Name from validation since they're not editable
         ModelState.Remove("Name");
 
         if (!ModelState.IsValid)
         {
-            // Need to reload Name and Photo for the view
             var planDetailss = await plans.GetDetailsAsync(id);
             if (planDetailss.IsSuccess)
             {
@@ -124,31 +124,9 @@ public class PlanController(IPlanService plans) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Handle different error types
-        switch (result.ErrorKey)
-        {
-            case "PLAN_NOT_FOUND":
-                ModelState.AddModelError(string.Empty, "Plan not found");
-                TempData["Error"] = "Plan not found. It may have been deleted.";
-                break;
+        // Use the error handler
+        this.HandleErrorResult(result, ModelState);
 
-            case "UPDATE_ERROR":
-                ModelState.AddModelError(string.Empty, "Failed to update plan. Please try again.");
-                TempData["Error"] = "Failed to update plan. Please try again.";
-                break;
-
-            case "INTERNAL_ERROR":
-            case "DATABASE_ERROR":
-                ModelState.AddModelError(string.Empty, "A system error occurred. Please try again later.");
-                TempData["Error"] = "A system error occurred. Please try again later.";
-                break;
-
-            default:
-                ModelState.AddModelError(string.Empty, result.Error);
-                break;
-        }
-
-        // Reload Name for the view
         var planDetails = await plans.GetDetailsAsync(id);
         if (planDetails.IsSuccess)
         {
@@ -160,14 +138,15 @@ public class PlanController(IPlanService plans) : Controller
 
     [HttpPost("Toggle-Activation/{id:int}")]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> ToggleActivation(int id, CancellationToken ct)
     {
         var result = await plans.ToggleActivationAsync(id, ct);
 
         if (!result.IsSuccess)
         {
-            TempData["Error"] = result.Error;
-            return RedirectToAction(nameof(ToggleActivation), new {id});
+            this.HandleErrorResult(result);
+            return RedirectToAction(nameof(Index));
         }
 
         TempData["Success"] = "Plan status updated successfully";

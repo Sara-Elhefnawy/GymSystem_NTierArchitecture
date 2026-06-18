@@ -8,5 +8,5 @@ public class SessionInBookingDTO
     public DateTime? BookingDate { get; set; }
     public bool IsAttended { get; set; } = false;
 
-    public string? Photo { get; set; }
+    public DateTime? AttendanceMarkedAt { get; set; }
 }

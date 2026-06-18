@@ -1,4 +1,5 @@
 ﻿using GymSystem.Domain.DTOs.Home;
+using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.UnitOfWorks;
 using GymSystem.Shared.Common;
 using Microsoft.Extensions.Logging;

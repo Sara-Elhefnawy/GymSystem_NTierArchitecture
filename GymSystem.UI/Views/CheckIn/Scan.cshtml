@@ -1,0 +1,580 @@
+﻿@{
+    ViewData["Title"] = "QR Scanner";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-qr-code-scan me-2"></i>QR Code Scanner
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <div id="debugPanel" class="mb-3" style="text-align:left; background:#f8f9fa; padding:10px; border-radius:5px; font-size:12px; max-height:150px; overflow-y:auto; display:none;">
+                        <strong>Debug Log:</strong>
+                        <div id="debugLogContainer"></div>
+                    </div>
+
+                    <div id="permissionStatus" class="mb-3"></div>
+
+                    <div id="scanStatus" class="mt-3">
+                        <div class="text-muted">
+                            <i class="bi bi-camera-reels me-2"></i>
+                            Click "Start Scanner" to begin, or use manual entry below
+                        </div>
+                    </div>
+
+                    <div class="scanner-container">
+                        <video id="video" width="100%" style="max-width: 500px; height: auto; background: #000; min-height: 300px;"></video>
+                        <canvas id="canvas" style="display: none;"></canvas>
+                        <div id="cameraPlaceholder" class="text-white p-5" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none;">
+                            <i class="bi bi-camera display-3"></i>
+                            <p class="mt-2">Camera not started</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-flex justify-content-center gap-3 flex-wrap">
+                        <button id="startScanBtn" class="btn btn-primary">
+                            <i class="bi bi-play-fill me-1"></i>Start Scanner
+                        </button>
+                        <button id="stopScanBtn" class="btn btn-secondary" style="display:none;">
+                            <i class="bi bi-stop-fill me-1"></i>Stop Scanner
+                        </button>
+                        <button id="debugToggleBtn" class="btn btn-outline-secondary btn-sm" style="display:none;">
+                            <i class="bi bi-bug me-1"></i>Debug
+                        </button>
+                    </div>
+
+                    <!-- Manual entry - Always visible -->
+                    <div id="manualEntry" class="mt-4 p-3 border rounded bg-light">
+                        <h6 class="mb-3">
+                            <i class="bi bi-keyboard me-2"></i>Manual Check-in
+                        </h6>
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <input type="number" id="manualMemberId" class="form-control" placeholder="Enter Member ID" min="1">
+                                    <button id="manualCheckInBtn" class="btn btn-success">
+                                        <i class="bi bi-check-circle me-1"></i>Check In
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-1">Enter the member ID from their QR code</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-muted text-center">
+                    <small>
+                        <i class="bi bi-info-circle me-1"></i>
+                        Hold the QR code in front of the camera to scan, or enter member ID manually
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    console.log('QR Scanner loaded');
+
+    const videoElement = document.getElementById('video');
+    const canvasElement = document.getElementById('canvas');
+    const ctx = canvasElement.getContext('2d');
+    const startBtn = document.getElementById('startScanBtn');
+    const stopBtn = document.getElementById('stopScanBtn');
+    const manualCheckInBtn = document.getElementById('manualCheckInBtn');
+    const manualMemberIdInput = document.getElementById('manualMemberId');
+    const scanStatusDiv = document.getElementById('scanStatus');
+    const permissionStatusDiv = document.getElementById('permissionStatus');
+    const cameraPlaceholderDiv = document.getElementById('cameraPlaceholder');
+    const debugLogContainer = document.getElementById('debugLogContainer');
+    const debugPanelDiv = document.getElementById('debugPanel');
+    const debugToggleBtn = document.getElementById('debugToggleBtn');
+
+    let isScanning = false;
+    let mediaStream = null;
+    let animationFrameId = null;
+    let isDebugVisible = false;
+
+    function addDebugLog(message, isError = false) {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}`;
+    console.log(logEntry);
+
+    const entry = document.createElement('div');
+    entry.textContent = logEntry;
+    entry.style.cssText = `border-bottom: 1px solid #ddd; padding: 2px 0; ${isError ? 'color: red;' : ''}`;
+    debugLogContainer.appendChild(entry);
+
+    debugLogContainer.parentElement.scrollTop = debugLogContainer.parentElement.scrollHeight;
+
+    if (!isDebugVisible) {
+    debugPanelDiv.style.display = 'block';
+    debugToggleBtn.style.display = 'inline-block';
+    }
+    }
+
+    debugToggleBtn.addEventListener('click', function() {
+    isDebugVisible = !isDebugVisible;
+    debugPanelDiv.style.display = isDebugVisible ? 'block' : 'none';
+    this.innerHTML = isDebugVisible ?
+    '<i class="bi bi-bug me-1"></i>Hide Debug' :
+    '<i class="bi bi-bug me-1"></i>Debug';
+    });
+
+    function checkCameraSupport() {
+    addDebugLog('Checking camera support...');
+
+    if (!navigator.mediaDevices) {
+    addDebugLog('ERROR: navigator.mediaDevices is undefined', true);
+    return false;
+    }
+
+    if (!navigator.mediaDevices.getUserMedia) {
+    addDebugLog('ERROR: getUserMedia is not supported', true);
+    return false;
+    }
+
+    addDebugLog('Camera support: OK');
+    return true;
+    }
+
+    async function checkCameraPermission() {
+    addDebugLog('Checking camera permission...');
+
+    try {
+    if (navigator.permissions && navigator.permissions.query) {
+    const result = await navigator.permissions.query({ name: 'camera' });
+    addDebugLog(`Permission state: ${result.state}`);
+
+    if (result.state === 'denied') {
+    permissionStatusDiv.innerHTML = `
+    <div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>Camera access is blocked!</strong>
+    <br>
+    <small>Click the camera icon in the address bar → Allow → Refresh</small>
+    </div>
+    `;
+    return false;
+    } else if (result.state === 'prompt') {
+    permissionStatusDiv.innerHTML = `
+    <div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    Camera permission will be requested when you click "Start Scanner"
+    </div>
+    `;
+    return true;
+    } else if (result.state === 'granted') {
+    permissionStatusDiv.innerHTML = `
+    <div class="alert alert-success">
+    <i class="bi bi-check-circle me-2"></i>
+    Camera permission is granted
+    </div>
+    `;
+    return true;
+    }
+    } else {
+    addDebugLog('Permissions API not supported, will try getUserMedia directly');
+    }
+    return true;
+    } catch (err) {
+    addDebugLog(`Permission check error: ${err.message}`, true);
+    return true;
+    }
+    }
+
+    async function getAvailableDevices() {
+    addDebugLog('Getting available devices...');
+    try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+    addDebugLog(`Found ${videoDevices.length} video device(s):`);
+    videoDevices.forEach((device, index) => {
+    addDebugLog(`  ${index + 1}. ${device.label || 'Unnamed camera'} (${device.deviceId.substring(0, 10)}...)`);
+    });
+
+    return videoDevices;
+    } catch (err) {
+    addDebugLog(`Error enumerating devices: ${err.message}`, true);
+    return [];
+    }
+    }
+
+    function performCheckIn(memberId, signature) {
+    scanStatusDiv.innerHTML = '<div class="text-warning"><i class="bi bi-hourglass-split me-2"></i>Processing check-in...</div>';
+
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+    fetch('/CheckIn/Confirm', {
+    method: 'POST',
+    headers: {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'RequestVerificationToken': token
+    },
+    body: `memberId=${parseInt(memberId)}&sig=${encodeURIComponent(signature)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+    if (data.success) {
+    let icon = 'bi-check-circle-fill';
+    let color = 'success';
+    let extraMessage = '';
+
+    if (data.wasAutoBooked) {
+    icon = 'bi-plus-circle-fill';
+    color = 'info';
+    extraMessage = '<br><small class="text-muted">Auto-booked for this session</small>';
+    } else if (data.alreadyAttended) {
+    icon = 'bi-clock-history';
+    color = 'warning';
+    extraMessage = '<br><small class="text-muted">Already checked in</small>';
+    }
+
+    scanStatusDiv.innerHTML = `
+    <div class="text-${color} fs-5">
+    <i class="bi ${icon} me-2"></i>
+    ${data.message}
+    ${extraMessage}
+    </div>
+    `;
+    document.querySelector('.scanner-container').style.border = `3px solid ${color === 'info' ? '#0dcaf0' : color === 'warning' ? '#ffc107' : '#28a745'}`;
+    if (navigator.vibrate) navigator.vibrate(200);
+    } else {
+    showError(data.message || 'Check-in failed');
+    }
+    })
+    .catch((err) => {
+    addDebugLog(`Check-in error: ${err.message}`, true);
+    showError('Server error - please try again');
+    });
+    }
+
+    function stopScanning() {
+    addDebugLog('Stopping scanner...');
+    isScanning = false;
+    if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    }
+    if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+    }
+    videoElement.srcObject = null;
+    cameraPlaceholderDiv.style.display = 'block';
+    startBtn.style.display = 'inline-block';
+    stopBtn.style.display = 'none';
+    scanStatusDiv.innerHTML = '<div class="text-muted"><i class="bi bi-camera-reels me-2"></i>Scanner stopped</div>';
+    document.querySelector('.scanner-container').style.border = 'none';
+    addDebugLog('Scanner stopped');
+    }
+
+    function scanLoop() {
+    if (!isScanning) return;
+
+    try {
+    ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+    const imageData = ctx.getImageData(0, 0, canvasElement.width, canvasElement.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+    inversionAttempts: 'dontInvert'
+    });
+
+    if (code && code.data) {
+    addDebugLog(`QR Code detected: ${code.data.substring(0, 50)}...`);
+    isScanning = false;
+    if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    }
+    processQRCode(code.data);
+    return;
+    }
+    } catch (err) {
+    console.warn('Scan error:', err);
+    }
+
+    if (isScanning) {
+    animationFrameId = requestAnimationFrame(scanLoop);
+    }
+    }
+
+    function processQRCode(qrData) {
+    scanStatusDiv.innerHTML = '<div class="text-warning"><i class="bi bi-hourglass-split me-2"></i>Processing QR code...</div>';
+
+    try {
+    const url = new URL(qrData, window.location.origin);
+    const memberId = url.searchParams.get('memberId');
+    const sig = url.searchParams.get('sig');
+
+    if (!memberId || !sig) {
+    showError('Invalid QR code - missing member ID or signature');
+    resumeScanning();
+    return;
+    }
+
+    performCheckIn(memberId, sig);
+    } catch (err) {
+    console.error('Error processing QR code:', err);
+    addDebugLog(`QR processing error: ${err.message}`, true);
+    showError('Invalid QR code format');
+    resumeScanning();
+    }
+    }
+
+    function resumeScanning() {
+    setTimeout(function() {
+    if (mediaStream) {
+    isScanning = true;
+    scanStatusDiv.innerHTML = '<div class="text-success"><i class="bi bi-camera-reels me-2"></i>Scanner active - scanning for QR codes...</div>';
+    animationFrameId = requestAnimationFrame(scanLoop);
+    }
+    }, 3000);
+    }
+
+    function showError(message) {
+    scanStatusDiv.innerHTML = `<div class="text-danger fs-5"><i class="bi bi-x-circle-fill me-2"></i>${message}</div>`;
+    document.querySelector('.scanner-container').style.border = '3px solid #dc3545';
+    setTimeout(() => {
+    document.querySelector('.scanner-container').style.border = 'none';
+    resumeScanning();
+    }, 3000);
+    }
+
+    startBtn.addEventListener('click', async function() {
+    addDebugLog('========== START SCANNER CLICKED ==========');
+
+    try {
+    if (!checkCameraSupport()) {
+    throw new Error('Camera not supported on this browser.');
+    }
+
+    await checkCameraPermission();
+    await getAvailableDevices();
+
+    addDebugLog('Requesting camera access...');
+    scanStatusDiv.innerHTML = '<div class="text-info"><i class="bi bi-hourglass-split me-2"></i>Requesting camera access...</div>';
+
+    const constraints = {
+    video: {
+    facingMode: 'environment',
+    width: { ideal: 640 },
+    height: { ideal: 480 }
+    }
+    };
+
+    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+    addDebugLog('Camera access GRANTED!');
+
+    const videoTracks = mediaStream.getVideoTracks();
+    addDebugLog(`Video tracks: ${videoTracks.length}`);
+
+    if (videoTracks.length === 0) {
+    throw new Error('No video track available');
+    }
+
+    videoElement.srcObject = mediaStream;
+    await videoElement.play();
+    addDebugLog('Video playing!');
+
+    cameraPlaceholderDiv.style.display = 'none';
+    canvasElement.width = videoElement.videoWidth || 640;
+    canvasElement.height = videoElement.videoHeight || 480;
+    addDebugLog(`Canvas size: ${canvasElement.width}x${canvasElement.height}`);
+
+    isScanning = true;
+    startBtn.style.display = 'none';
+    stopBtn.style.display = 'inline-block';
+    permissionStatusDiv.innerHTML = `
+    <div class="alert alert-success">
+    <i class="bi bi-check-circle me-2"></i>
+    Camera is active!
+    </div>
+    `;
+    scanStatusDiv.innerHTML = '<div class="text-success"><i class="bi bi-camera-reels me-2"></i>Scanner active - scanning for QR codes...</div>';
+
+    addDebugLog('Starting scan loop...');
+    animationFrameId = requestAnimationFrame(scanLoop);
+
+    } catch (err) {
+    addDebugLog(`ERROR: ${err.name} - ${err.message}`, true);
+    console.error('Full error:', err);
+
+    let errorMessage = '';
+    let solution = '';
+
+    switch (err.name) {
+    case 'NotAllowedError':
+    case 'PermissionDeniedError':
+    errorMessage = 'Camera permission denied.';
+    solution = 'Click the camera icon in the address bar → Allow → Refresh.';
+    break;
+    case 'NotFoundError':
+    case 'DevicesNotFoundError':
+    errorMessage = 'No camera found.';
+    solution = 'Please connect a camera and try again.';
+    break;
+    case 'NotReadableError':
+    case 'TrackStartError':
+    errorMessage = 'Camera is in use by another application.';
+    solution = 'Close other apps using the camera and try again.';
+    break;
+    case 'SecurityError':
+    errorMessage = 'Camera access blocked by security policy.';
+    solution = 'Please use HTTPS or check your browser settings.';
+    break;
+    default:
+    errorMessage = err.message;
+    solution = 'Please check your browser settings and allow camera access.';
+    }
+
+    scanStatusDiv.innerHTML = `
+    <div class="text-danger">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>${errorMessage}</strong>
+    <br>
+    <small>${solution}</small>
+    <br>
+    <small class="text-muted">Check the debug log for more details.</small>
+    </div>
+    `;
+    }
+    });
+
+    stopBtn.addEventListener('click', function() {
+    addDebugLog('Stop Scanner clicked');
+    stopScanning();
+    });
+
+    manualCheckInBtn.addEventListener('click', function() {
+    const memberId = manualMemberIdInput.value;
+    if (!memberId || memberId < 1) {
+    showError('Please enter a valid member ID');
+    return;
+    }
+
+    addDebugLog(`Manual check-in for member ${memberId}`);
+
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+    fetch(`/CheckIn/GenerateSignature?memberId=${memberId}`)
+    .then(response => response.json())
+    .then(data => {
+    if (data.success) {
+    performCheckIn(memberId, data.signature);
+    } else {
+    showError(data.message || 'Failed to generate signature');
+    }
+    })
+    .catch((err) => {
+    addDebugLog(`Manual check-in error: ${err.message}`, true);
+    showError('Server error - please try again');
+    });
+    });
+
+    manualMemberIdInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+    manualCheckInBtn.click();
+    }
+    });
+
+    window.addEventListener('beforeunload', function() {
+    addDebugLog('Page unloading, stopping scanner...');
+    stopScanning();
+    });
+
+    addDebugLog('========== PAGE LOADED ==========');
+    addDebugLog(`URL: ${window.location.href}`);
+    addDebugLog(`Protocol: ${window.location.protocol}`);
+    addDebugLog(`User Agent: ${navigator.userAgent}`);
+
+    checkCameraSupport();
+    checkCameraPermission();
+    getAvailableDevices();
+    });
+</script>
+
+<style>
+    .scanner-container {
+    position: relative;
+    display: inline-block;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+    transition: border 0.3s ease;
+    min-height: 300px;
+    width: 100%;
+    max-width: 500px;
+    }
+
+    #video {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #000;
+    min-height: 300px;
+    }
+
+    #cameraPlaceholder {
+    pointer-events: none;
+    }
+
+    #scanStatus {
+    min-height: 60px;
+    font-size: 1.1rem;
+    }
+
+    .btn {
+    min-width: 120px;
+    }
+
+    .scanner-container::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 80%;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    border-radius: 4px;
+    }
+
+    #debugPanel {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+    text-align: left;
+    font-size: 12px;
+    font-family: monospace;
+    }
+
+    #debugLogContainer div {
+    border-bottom: 1px solid #eee;
+    padding: 2px 0;
+    }
+
+    #manualEntry {
+    background: #f8f9fa;
+    border-radius: 8px;
+    }
+
+    #manualEntry h6 {
+    color: #495057;
+    }
+
+    .input-group {
+    max-width: 400px;
+    margin: 0 auto;
+    }
+</style>

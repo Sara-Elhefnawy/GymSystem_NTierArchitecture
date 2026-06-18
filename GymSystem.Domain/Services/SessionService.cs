@@ -2,7 +2,6 @@
 using GymSystem.Domain.DTOs.Session.Enums;
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.Entities.Enums;
 using GymSystem.Infrastructure.QueryService;
 using GymSystem.Infrastructure.UnitOfWorks;
 using GymSystem.Shared.Common;
@@ -76,7 +75,7 @@ public class SessionService : ISessionService
             if (trainer is null)
                 return Result.Fail("Invalid trainer.", "TRAINER_NOT_FOUND");
 
-            if (!IsTrainerSpecialtyMatchingCategory(trainer.Specialty, category.Name))
+            if (ValidateTrainerSpecialty(trainer, category).IsFailure)
                 return Result.Fail($"Trainer specialty '{trainer.Specialty}' does not match category '{category.Name}'. Only trainers with matching specialty can lead this session.", "SPECIALTY_MISMATCH");
 
             if (await _uow.Sessions.HasTrainerConflictAsync(trainer.Id, start, end, null, ct))
@@ -207,7 +206,7 @@ public class SessionService : ISessionService
             if (trainer is null)
                 return Result.Fail("Invalid trainer.", "TRAINER_NOT_FOUND");
 
-            if (!IsTrainerSpecialtyMatchingCategory(trainer.Specialty, session.Category.Name))
+            if (ValidateTrainerSpecialty(trainer, session.Category).IsFailure)
                 return Result.Fail($"Trainer specialty '{trainer.Specialty}' does not match category '{session.Category.Name}'", "SPECIALTY_MISMATCH");
 
             if (await _uow.Sessions.HasTrainerConflictAsync(trainer.Id, model.StartDate, model.EndDate, model.Id, ct))
@@ -311,17 +310,20 @@ public class SessionService : ISessionService
         }
     }
 
-    private bool IsTrainerSpecialtyMatchingCategory(Specialty trainerSpecialty, string categoryName)
+    private Result ValidateTrainerSpecialty(Trainer trainer, Category category)
     {
-        return categoryName switch
+        var trainerSpecialty = trainer.Specialty.ToString().Trim() ?? string.Empty;
+        var categoryName = category.Name?.Trim() ?? string.Empty;
+
+        // Case-insensitive match
+        if (!string.Equals(trainerSpecialty, categoryName, StringComparison.OrdinalIgnoreCase))
         {
-            "Yoga" => trainerSpecialty == Specialty.Yoga,
-            "Cardio" => trainerSpecialty == Specialty.Cardio,
-            "CrossFit" => trainerSpecialty == Specialty.CrossFit,
-            "Boxing" => trainerSpecialty == Specialty.Boxing,
-            "Strength" => trainerSpecialty == Specialty.Bodybuilding || trainerSpecialty == Specialty.PersonalTraining,
-            _ => false
-        };
+            _logger.LogWarning("Trainer specialty '{TrainerSpecialty}' does not match category '{CategoryName}'",
+                trainerSpecialty, categoryName);
+            return Result.Fail($"Trainer specialty '{trainerSpecialty}' does not match category '{categoryName}'. Only trainers with matching specialty can lead this session.");
+        }
+
+        return Result.Ok();
     }
 
     private SessionStatus GetStatus(DateTime startDate, DateTime endDate, DateTime now)

@@ -24,7 +24,4 @@ public class CreateSessionDTO
 
     [Required]
     public DateTime EndDate { get; set; }
-
-    public IReadOnlyList<CategoryLookupDTO> Categories { get; set; } = [];
-    public IReadOnlyList<TrainerLookupDTO> Trainers { get; set; } = [];
 }

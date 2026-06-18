@@ -14,4 +14,7 @@ public interface IAttachmentService
     Task<Result> DeleteAsync(string fileName, CancellationToken ct = default);
 
     string GetFullPath(string fileName);
+
+    // QRCode
+    Task<Result<string>> SaveBytesAsync(byte[] content, string fileName, string category, CancellationToken ct = default);
 }

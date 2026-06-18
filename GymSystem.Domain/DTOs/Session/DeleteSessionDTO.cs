@@ -1,6 +1,4 @@
-﻿using GymSystem.Domain.DTOs.Session.Enums;
-
-namespace GymSystem.Domain.DTOs.Session;
+﻿namespace GymSystem.Domain.DTOs.Session;
 
 public class DeleteSessionDTO
 {

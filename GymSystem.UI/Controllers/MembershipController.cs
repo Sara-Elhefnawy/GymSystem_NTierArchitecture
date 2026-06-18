@@ -1,7 +1,8 @@
-﻿using GymSystem.Domain.DTOs.Memberships;
+﻿using GymSystem.Domain.DTOs.Membership;
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Memberships;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -30,12 +31,13 @@ public class MembershipController(
 
         var viewModel = result.Value.Select(m => new IndexMembershipViewModel
         {
-            EndDate = m.EndDate,
-            StartDate = m.StartDate,
+            Id = m.Id,
             MemberId = m.MemberId,
             MemberName = m.MemberName,
-            Photo = m.Photo,
-            PlanName = m.PlanName
+            PlanName = m.PlanName,
+            StartDate = m.StartDate,
+            EndDate = m.EndDate,
+            Photo = m.Photo
         }).ToList();
 
         return View(viewModel);
@@ -97,11 +99,17 @@ public class MembershipController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
+        if (id <= 0)
+        {
+            TempData["Error"] = "Invalid membership ID";
+            return RedirectToAction(nameof(Index));
+        }
+
         var result = await _membershipService.CancelMembershipAsync(id, ct);
 
         if (result.IsSuccess)
         {
-            TempData["Success"] = "Membership cancelled successfully.";
+            TempData["Success"] = "Membership cancelled successfully. QR code has been removed.";
         }
         else
         {

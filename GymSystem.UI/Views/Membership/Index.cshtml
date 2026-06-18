@@ -1,161 +1,86 @@
-﻿@model IReadOnlyList<IndexMembershipViewModel>
+﻿@model IEnumerable<IndexMembershipViewModel>
 
 @{
-    ViewData["Title"] = "Active Memberships";
+    ViewData["Title"] = "Memberships";
 }
 
-<div class="container">
-    <header class="d-flex justify-content-between mt-5 mb-4 align-items-center">
-        <div>
-            <h2 class="text-primary-color mb-0">Active Memberships</h2>
-            <p class="text-muted">Manage member subscriptions and plans</p>
-        </div>
-        <a asp-action="Create" class="btn btn-fill fw-medium rounded-pill px-4 py-3">
-            <i class="bi bi-plus-lg me-2"></i>New Membership
-        </a>
-    </header>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary-color">Active Memberships</h2>
+        <a asp-action="Create" class="btn-fill">Create New Membership</a>
+    </div>
 
-    @if (Model != null && Model.Any())
+    @if (!Model.Any())
     {
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="ps-4">Member</th>
-                                <th>Plan</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>Status</th>
-                                <th class="text-center pe-4">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center">
-                                            <img src="@Url.Action("GetPhoto", "Member", new { id = item.MemberId })"
-                                                 class="rounded-circle"
-                                                 style="width:40px;height:40px;object-fit:cover;"
-                                                 onerror="this.src='/images/User.png'" />
-                                            <span class="ms-2 fw-medium">@item.MemberName</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info">@item.PlanName</span>
-                                    </td>
-                                    <td>@item.StartDate.ToString("MMM dd, yyyy")</td>
-                                    <td>@item.EndDate.ToString("MMM dd, yyyy")</td>
-                                    <td>
-                                        @if (item.EndDate > DateOnly.FromDateTime(DateTime.Now))
-                                        {
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-check-circle-fill me-1"></i> Active
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">
-                                                <i class="bi bi-x-circle-fill me-1"></i> Expired
-                                            </span>
-                                        }
-                                    </td>
-                                    <td class="text-center pe-4">
-                                        @if (item.EndDate > DateOnly.FromDateTime(DateTime.Now))
-                                        {
-                                            <button type="button" class="btn btn-outline-danger btn-sm"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#cancelMembershipModal"
-                                                    data-memberid="@item.MemberId"
-                                                    data-membername="@item.MemberName"
-                                                    data-planname="@item.PlanName">
-                                                <i class="bi bi-x-circle me-1"></i>Cancel
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Expired</span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle"></i> No active memberships found.
         </div>
     }
     else
     {
-        <div class="text-center py-5">
-            <i class="bi bi-person-workspace display-1 text-muted"></i>
-            <h4 class="mt-3 text-muted">No Active Memberships</h4>
-            <p class="text-muted">Create your first membership to get started</p>
-            <a asp-action="Create" class="btn btn-fill fw-medium rounded-pill px-4 py-3 mt-3">
-                <i class="bi bi-plus-lg me-2"></i>Create Membership
-            </a>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>QR Code</th>
+                        <th>Member</th>
+                        <th>Plan</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <!-- QR Code -->
+                                <div class="qr-code-container">
+                                    <img src="@item.QrCodeUrl"
+                                         alt="QR Code for @item.MemberName"
+                                         class="qr-code-img"
+                                         style="width: 50px; height: 50px; cursor: pointer; border-radius: 4px;" />
+
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#qrModal_@item.MemberId">
+                                        <i class="bi bi-qr-code"></i> View
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="@Url.Action("GetPhoto", "Member", new { id = item.MemberId })"
+                                         alt="@item.MemberName"
+                                         class="rounded-circle me-2"
+                                         style="width: 30px; height: 30px; object-fit: cover;"
+                                         onerror="this.src='/images/User.png'" />
+                                    <span>@item.MemberName</span>
+                                </div>
+                            </td>
+                            <td>@item.PlanName</td>
+                            <td>@item.StartDate.ToString("yyyy-MM-dd")</td>
+                            <td>@item.EndDate.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                <span class="badge @item.StatusBadgeClass">@item.Status</span>
+                                <small class="d-block text-muted">@item.DaysLeft days left</small>
+                            </td>
+                            <td>
+                                <form asp-action="Cancel" asp-controller="Membership" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Are you sure you want to cancel the membership for @item.MemberName?')">
+                                        <i class="bi bi-x-circle"></i> Cancel
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     }
 </div>
-
-<!-- Cancel Membership Modal -->
-<div class="modal fade" id="cancelMembershipModal" tabindex="-1" aria-labelledby="cancelMembershipModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="cancelMembershipModalLabel">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Cancel Membership
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="text-center mb-4">
-                    <i class="bi bi-person-x display-3 text-danger"></i>
-                </div>
-                <h5 class="text-center mb-3">Are you sure?</h5>
-                <p class="text-center text-muted">
-                    You are about to cancel the membership for <strong id="memberNameDisplay"></strong>
-                    with plan <strong id="planNameDisplay"></strong>.
-                </p>
-                <div class="alert alert-warning">
-                    <i class="bi bi-info-circle me-2"></i>
-                    This action cannot be undone. The member will lose access to all gym facilities.
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
-                    <i class="bi bi-x-lg me-1"></i> Cancel
-                </button>
-                <form asp-action="Cancel" asp-controller="Membership" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" id="cancelMemberId" />
-                    <button type="submit" class="btn btn-danger px-4">
-                        <i class="bi bi-check-lg me-1"></i> Yes, Cancel
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script>
-        $(document).ready(function() {
-            $('#cancelMembershipModal').on('show.bs.modal', function(event) {
-                var button = $(event.relatedTarget);
-                var memberId = button.data('memberid');
-                var memberName = button.data('membername');
-                var planName = button.data('planname');
-
-                var modal = $(this);
-                modal.find('#cancelMemberId').val(memberId);
-                modal.find('#memberNameDisplay').text(memberName);
-                modal.find('#planNameDisplay').text(planName);
-            });
-        });
-    </script>
-}

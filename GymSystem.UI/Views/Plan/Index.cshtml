@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Plans";
+    var isSuperAdmin = User.IsInRole("SuperAdmin");
 }
 
 <div class="container">
@@ -51,21 +52,23 @@
                                         <i class="bi bi-eye me-1"></i>View Details
                                     </a>
 
-                                    <div class="d-flex gap-2">
+                                    @if (isSuperAdmin)
+                                    {
+                                        <div class="d-flex gap-2">
                                         <a asp-controller="Plan" asp-action="Edit" asp-route-id="@plan.Id"
                                                 class="btn btn-sm flex-fill @(plan.IsActive ? "btn-outline" : "btn-inactive")"
                                                 style="@(!plan.IsActive ? "border-color: #6c757d;":"")">
                                             <i class="bi bi-pencil me-1"></i>Edit
                                         </a>
-        
-                                        <form asp-action="ToggleActivation" asp-controller="Plan" asp-route-id="@plan.Id" method="post"
-                                              onsubmit="return confirm('Are you sure you want to @(plan.IsActive ? "deactivate" : "activate") this plan?');">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn @(plan.IsActive ? "btn-outline-danger" : "btn-outline-success")">
-                                                <i class="bi bi-power"></i> @(plan.IsActive ? "Deactivate" : "Activate")
-                                            </button>
-                                        </form>
-                                    </div>
+                                            <form asp-action="ToggleActivation" asp-controller="Plan" asp-route-id="@plan.Id" method="post"
+                                                  onsubmit="return confirm('Are you sure you want to @(plan.IsActive ? "deactivate" : "activate") this plan?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn @(plan.IsActive ? "btn-outline-danger" : "btn-outline-success")">
+                                                    <i class="bi bi-power"></i> @(plan.IsActive ? "Deactivate" : "Activate")
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         </div>

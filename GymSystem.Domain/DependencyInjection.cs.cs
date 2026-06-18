@@ -1,14 +1,16 @@
 ﻿using GymSystem.Domain.Attachments;
+using GymSystem.Domain.QRCode;
 using GymSystem.Domain.Services;
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Attachments;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GymSystem.Domain;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddDomainServices(this IServiceCollection services)
+    public static IServiceCollection AddDomainServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<IMemberService, MemberService>();
@@ -20,6 +22,9 @@ public static class DependencyInjection
         services.AddScoped<IMembershipService, MembershipService>();
 
         services.AddScoped<IAttachmentService, AttachmentService>();
+
+        services.AddScoped<IQrService, QrService>();
+        services.Configure<QrCodeSettings>(configuration.GetSection("QrCodeSettings"));
 
         return services;
     }

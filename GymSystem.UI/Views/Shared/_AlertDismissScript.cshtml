@@ -1,31 +1,49 @@
-﻿@if (TempData["Success"] != null)
-{
-    <script asp-append-version="true">
-        document.addEventListener("DOMContentLoaded", function () {
-            const alertBox = document.getElementById("Alert");
-            if (alertBox) {
-                alertBox.style.display = "block";
-                setTimeout(() => {
-                    alertBox.style.transition = "opacity 0.5s ease";
-                    alertBox.style.opacity = "0";
-                    setTimeout(() => alertBox.remove(), 500);
-                }, 3000);
-            }
-        });
-    </script>
+﻿@{
+    var toastType = "";
+    var toastMessage = "";
+
+    if (TempData["Success"] != null)
+    {
+        toastType = "bg-success";
+        toastMessage = TempData["Success"].ToString();
+    }
+    else if (TempData["Error"] != null)
+    {
+        toastType = "bg-danger";
+        toastMessage = TempData["Error"].ToString();
+    }
+    else if (TempData["Warning"] != null)
+    {
+        toastType = "bg-warning";
+        toastMessage = TempData["Warning"].ToString();
+    }
+    else if (TempData["Info"] != null)
+    {
+        toastType = "bg-info";
+        toastMessage = TempData["Info"].ToString();
+    }
 }
-else if (TempData["Error"] != null)
+
+@if (!string.IsNullOrEmpty(toastMessage))
 {
     <script asp-append-version="true">
         document.addEventListener("DOMContentLoaded", function () {
-            const alertBox = document.getElementById("Alert");
-            if (alertBox) {
-                alertBox.style.display = "block";
-                setTimeout(() => {
-                    alertBox.style.transition = "opacity 0.5s ease";
-                    alertBox.style.opacity = "0";
-                    setTimeout(() => alertBox.remove(), 500);
-                }, 3000);
+            const toastEl = document.getElementById("ToastNotification");
+            const toastBody = document.getElementById("ToastMessage");
+
+            if (toastEl && toastBody) {
+                // Set the message
+                toastBody.textContent = "@Html.Raw(toastMessage)";
+
+                // Set the background color
+                toastEl.className = `toast align-items-center text-white border-0 @toastType`;
+
+                // Initialize and show the toast
+                const toast = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: 5000
+                });
+                toast.show();
             }
         });
     </script>

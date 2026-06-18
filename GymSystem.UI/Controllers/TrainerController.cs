@@ -1,6 +1,7 @@
 ﻿using GymSystem.Domain.DTOs.Trainer;
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Entities.Enums;
+using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Trainer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -17,7 +18,7 @@ public class TrainerController(ITrainerService trainers) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = "Unable to load trainers. Please try again.";
+            this.HandleErrorResult(result);
             return View(new List<IndexTrainerViewModel>());
         }
 
@@ -70,45 +71,8 @@ public class TrainerController(ITrainerService trainers) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Handle specific error cases
-        switch (result.ErrorKey)
-        {
-            case "EMAIL_TAKEN":
-                ModelState.AddModelError("Email", "This email is already registered");
-                TempData["Warning"] = "This email is already registered to another trainer. Please use a different email.";
-                break;
-
-            case "PHONE_TAKEN":
-                ModelState.AddModelError("Phone", "This phone number is already registered");
-                TempData["Warning"] = "This phone number is already registered to another trainer. Please use a different number.";
-                break;
-
-            case "INVALID_AGE":
-                ModelState.AddModelError("DateOfBirth", "Age must be between 12 and 120 years");
-                TempData["Warning"] = "Age must be between 12 and 120 years.";
-                break;
-
-            case "INVALID_NAME":
-                ModelState.AddModelError("Name", "Name can only contain letters, spaces, hyphens, and apostrophes");
-                TempData["Warning"] = "Name contains invalid characters. Use only letters, spaces, hyphens, and apostrophes.";
-                break;
-
-            case "INVALID_GENDER":
-                ModelState.AddModelError("Gender", "Please select a valid gender");
-                TempData["Warning"] = "Please select a valid gender option.";
-                break;
-
-            case "INVALID_BLOOD_TYPE":
-                ModelState.AddModelError("HealthRecord.BloodType", "Please select a valid blood type");
-                TempData["Warning"] = "Please select a valid blood type from the list.";
-                break;
-
-            default:
-                ModelState.AddModelError(string.Empty, result.Error);
-                TempData["Error"] = result.Error;
-                break;
-        }
-
+        // Use the error handler
+        this.HandleErrorResult(result, ModelState);
         return View(model);
     }
 
@@ -119,7 +83,7 @@ public class TrainerController(ITrainerService trainers) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Index));
         }
 
@@ -144,7 +108,7 @@ public class TrainerController(ITrainerService trainers) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Index));
         }
 
@@ -159,7 +123,6 @@ public class TrainerController(ITrainerService trainers) : Controller
             Specialty = result.Value.Specialty,
         };
 
-        // Load Name from a separate call or modify GetForEditAsync to include them
         var trainersDetails = await trainers.GetDetailsAsync(id, ct);
         if (trainersDetails.IsSuccess)
         {
@@ -167,31 +130,28 @@ public class TrainerController(ITrainerService trainers) : Controller
         }
 
         ViewBag.Specialties = Enum.GetValues(typeof(Specialty))
-        .Cast<Specialty>()
-        .Select(e => new SelectListItem
-        {
-            Value = e.ToString(),
-            Text = e.ToString(),
-            Selected = e.ToString() == viewModel.Specialty
-        }).ToList();
+            .Cast<Specialty>()
+            .Select(e => new SelectListItem
+            {
+                Value = e.ToString(),
+                Text = e.ToString(),
+                Selected = e.ToString() == viewModel.Specialty
+            }).ToList();
 
         return View(viewModel);
     }
 
     [HttpPost("Edit/{id:int}")]
-    [IgnoreAntiforgeryToken]
+    [ValidateAntiForgeryToken]  // Restore this
     public async Task<IActionResult> Edit([FromRoute] int id, EditTrainerViewModel model, CancellationToken ct)
     {
-
         if (id != model.Id)
             return NotFound();
 
-        // Remove Name from validation since they're not editable
         ModelState.Remove("Name");
 
         if (!ModelState.IsValid)
         {
-            // Need to reload Name for the view
             var trainerDetailss = await trainers.GetDetailsAsync(id, ct);
             if (trainerDetailss.IsSuccess)
             {
@@ -219,46 +179,9 @@ public class TrainerController(ITrainerService trainers) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Handle specific error cases
-        switch (result.ErrorKey)
-        {
-            case "EMAIL_TAKEN":
-                ModelState.AddModelError("Email", "This email is already registered");
-                TempData["Warning"] = "This email is already registered to another trainer. Please use a different email.";
-                break;
+        // Use the error handler
+        this.HandleErrorResult(result, ModelState);
 
-            case "PHONE_TAKEN":
-                ModelState.AddModelError("Phone", "This phone number is already registered");
-                TempData["Warning"] = "This phone number is already registered to another trainer. Please use a different number.";
-                break;
-
-            case "INVALID_AGE":
-                ModelState.AddModelError("DateOfBirth", "Age must be between 12 and 120 years");
-                TempData["Warning"] = "Age must be between 12 and 120 years.";
-                break;
-
-            case "INVALID_NAME":
-                ModelState.AddModelError("Name", "Name can only contain letters, spaces, hyphens, and apostrophes");
-                TempData["Warning"] = "Name contains invalid characters. Use only letters, spaces, hyphens, and apostrophes.";
-                break;
-
-            case "INVALID_GENDER":
-                ModelState.AddModelError("Gender", "Please select a valid gender");
-                TempData["Warning"] = "Please select a valid gender option.";
-                break;
-
-            case "INVALID_BLOOD_TYPE":
-                ModelState.AddModelError("HealthRecord.BloodType", "Please select a valid blood type");
-                TempData["Warning"] = "Please select a valid blood type from the list.";
-                break;
-
-            default:
-                ModelState.AddModelError(string.Empty, result.Error);
-                TempData["Error"] = result.Error;
-                break;
-        }
-
-        // Reload Name for the view
         var trainerDetails = await trainers.GetDetailsAsync(id, ct);
         if (trainerDetails.IsSuccess)
         {
@@ -275,7 +198,7 @@ public class TrainerController(ITrainerService trainers) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Index));
         }
 
@@ -283,7 +206,6 @@ public class TrainerController(ITrainerService trainers) : Controller
         {
             Id = id,
             Name = result.Value.Name,
-            Photo = result.Value.Photo
         };
 
         return View(viewModel);
@@ -297,7 +219,7 @@ public class TrainerController(ITrainerService trainers) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return RedirectToAction(nameof(Delete), new { id });
         }
 

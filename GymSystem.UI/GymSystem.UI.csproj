@@ -17,4 +17,9 @@
     <ProjectReference Include="..\GymSystem.Domain\GymSystem.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Attachments\Members\" />
+    <Folder Include="Attachments\QRCode\" />
+  </ItemGroup>
+
 </Project>

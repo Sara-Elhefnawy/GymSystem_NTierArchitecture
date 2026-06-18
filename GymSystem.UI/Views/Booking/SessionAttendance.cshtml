@@ -13,7 +13,10 @@
             </h2>
             <p class="text-muted">Mark attendance for members</p>
         </div>
-        <div>
+        <div class="d-flex gap-2">
+            <a asp-action="Scan" asp-controller="CheckIn" class="btn btn-success">
+                <i class="bi bi-qr-code-scan me-1"></i> Scan QR
+            </a>
             <a asp-action="Index" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Back to Sessions
             </a>
@@ -58,6 +61,11 @@
                                         {
                                             <span class="badge bg-success">
                                                 <i class="bi bi-check-circle-fill me-1"></i> Attended
+                                                @if (item.AttendanceMarkedAt.HasValue)
+                                                {
+                                                    <br />
+                                                    <small>@item.AttendanceMarkedAt.Value.ToString("hh:mm tt")</small>
+                                                }
                                             </span>
                                         }
                                         else

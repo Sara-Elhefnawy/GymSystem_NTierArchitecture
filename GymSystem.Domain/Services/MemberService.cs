@@ -1,6 +1,7 @@
 ﻿using GymSystem.Domain.Attachments;
 using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
+using GymSystem.Domain.QRCode;
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Attachments;
 using GymSystem.Infrastructure.Entities;
@@ -12,11 +13,12 @@ using System.Text.RegularExpressions;
 
 namespace GymSystem.Domain.Services;
 
-public class MemberService(IUnitOfWork uow, ILogger<MemberService> logger, IAttachmentService attachmentService) : IMemberService
+public class MemberService(IUnitOfWork uow, ILogger<MemberService> logger, IAttachmentService attachmentService, IQrService qrService) : IMemberService
 {
     private readonly IUnitOfWork _uow = uow;
     private readonly ILogger<MemberService> _logger = logger;
     private readonly IAttachmentService _attachmentService = attachmentService;
+    private readonly IQrService _qrService = qrService;
 
     public async Task<Result<IReadOnlyList<IndexMemberDTO>>> GetAllAsync(CancellationToken ct = default)
     {
@@ -399,7 +401,7 @@ public class MemberService(IUnitOfWork uow, ILogger<MemberService> logger, IAtta
             }
 
             // Business rule: cannot delete if member has active bookings
-            var hasActiveBookings = await _uow.Bookings.GetWithMemberDetailsAsync(id, DateTime.UtcNow, ct);
+            var hasActiveBookings = await _uow.Bookings.GetWithMemberDetailsAsync(id, DateTime.Now, ct);
 
             if (hasActiveBookings)
                 return Result.Fail("Cannot delete member with active bookings", "ACTIVE_BOOKINGS_EXIST");
@@ -413,10 +415,20 @@ public class MemberService(IUnitOfWork uow, ILogger<MemberService> logger, IAtta
                 {
                     _logger.LogWarning("Failed to delete photo for member {Id}: {Error}", id, deleteResult.Error);
                 }
-                else
+            }
+
+            // Delete the QR code using the naming convention
+            try
+            {
+                var qrDeleteResult = await _qrService.DeleteMemberQrCodeAsync(id, ct);
+                if (qrDeleteResult.IsFailure && qrDeleteResult.Error != "QR code not found")
                 {
-                    _logger.LogInformation("Photo deleted successfully for member {Id}", id);
+                    _logger.LogWarning("Failed to delete QR code for member {Id}: {Error}", id, qrDeleteResult.Error);
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error deleting QR code for member {Id}", id);
             }
 
             await _uow.Members.SoftDeleteAsync(member, ct);

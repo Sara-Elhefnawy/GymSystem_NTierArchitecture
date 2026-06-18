@@ -17,7 +17,6 @@ public class IndexSessionViewModel
 
     public int MaxCapacity { get; set; }
     public int AvailableSlots { get; set; }
-    public string CapacityDisplay => $"{AvailableSlots} / {MaxCapacity} spots";
 
     public SessionStatus Status { get; set; }
 

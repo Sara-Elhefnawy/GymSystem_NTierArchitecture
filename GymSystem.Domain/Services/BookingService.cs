@@ -1,4 +1,6 @@
 ﻿using GymSystem.Domain.DTOs.Booking;
+using GymSystem.Domain.DTOs.CheckIn;
+using GymSystem.Domain.QRCode;
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Entities;
 using GymSystem.Infrastructure.UnitOfWorks;
@@ -7,12 +9,13 @@ using Microsoft.Extensions.Logging;
 
 namespace GymSystem.Domain.Services;
 
-public class BookingService(IUnitOfWork uow, ILogger<BookingService> logger) : IBookingService
+public class BookingService(IUnitOfWork uow, ILogger<BookingService> logger, IQrService qrService) : IBookingService
 {
     private readonly IUnitOfWork _uow = uow;
     private readonly ILogger<BookingService> _logger = logger;
+    private readonly IQrService _qrService = qrService;
 
-    public async Task<Result<IReadOnlyList<SessionDTO>>> GetAvailableSessionsAsync(CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<IndexBookingDTO>>> GetAvailableSessionsAsync(CancellationToken ct = default)
     {
         try
         {
@@ -20,7 +23,7 @@ public class BookingService(IUnitOfWork uow, ILogger<BookingService> logger) : I
 
             var sessions = await _uow.Sessions.GetAllWithBookingsAsync(ct);
 
-            var viewModels = sessions.Select(s => new SessionDTO
+            var viewModels = sessions.Select(s => new IndexBookingDTO
             {
                 Id = s.Id,
                 CategoryName = s.Category?.Name ?? "Uncategorized",
@@ -36,12 +39,12 @@ public class BookingService(IUnitOfWork uow, ILogger<BookingService> logger) : I
 
             _logger.LogInformation("Retrieved {Count} sessions", viewModels.Count());
 
-            return Result.Ok<IReadOnlyList<SessionDTO>>(viewModels);
+            return Result.Ok<IReadOnlyList<IndexBookingDTO>>(viewModels);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting available sessions");
-            return Result.Fail<IReadOnlyList<SessionDTO>>("Failed to retrieve sessions", "DATABASE_ERROR");
+            return Result.Fail<IReadOnlyList<IndexBookingDTO>>("Failed to retrieve sessions", "DATABASE_ERROR");
         }
     }
 
@@ -59,6 +62,7 @@ public class BookingService(IUnitOfWork uow, ILogger<BookingService> logger) : I
                 MemberName = b.Member?.Name ?? "Unknown",
                 SessionId = b.SessionId,
                 IsAttended = b.IsAttended,
+                AttendanceMarkedAt = b.AttendanceMarkedAt, // Map this
                 BookingDate = b.BookingDate
             }).ToList();
 
@@ -122,14 +126,18 @@ public class BookingService(IUnitOfWork uow, ILogger<BookingService> logger) : I
                 return Result.Fail("Member already booked for this session", "ALREADY_BOOKED");
             }
 
-            var bookingCount = session.Bookings?.Count ?? 0;
-            _logger.LogInformation("Current bookings: {BookingCount}, Capacity: {Capacity}", bookingCount, session.Capacity);
+            var bookingCount = session.Bookings?.Count(b => !b.IsDeleted) ?? 0;
+            var availableSlots = session.Capacity - bookingCount;
 
-            if (bookingCount >= session.Capacity)
+            _logger.LogInformation("Session {SessionId} - Capacity: {Capacity}, Bookings: {Bookings}, Available: {Available}",
+                session.Id, session.Capacity, bookingCount, availableSlots);
+
+            if (availableSlots <= 0)
             {
                 _logger.LogWarning("Session {SessionId} is full", model.SessionId);
                 return Result.Fail("Session is at full capacity", "SESSION_FULL");
             }
+
 
             var booking = new Booking
             {
@@ -147,6 +155,28 @@ public class BookingService(IUnitOfWork uow, ILogger<BookingService> logger) : I
 
             _logger.LogInformation("Booking created successfully for member {MemberId} in session {SessionId}",
                 model.MemberId, model.SessionId);
+
+            // ✅ FIX: Generate QR code after successful creation
+            try
+            {
+                // Generate QR code for this booking
+                var qrResult = await _qrService.GenerateMemberQrPngAsync(model.MemberId, ct);
+                if (qrResult.IsSuccess)
+                {
+                    _logger.LogInformation("QR code generated for member {MemberId}, session {SessionId}",
+                        model.MemberId, model.SessionId);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to generate QR code for member {MemberId}, session {SessionId}: {Error}",
+                        model.MemberId, model.SessionId, qrResult.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to generate QR code for member {MemberId}, session {SessionId}",
+                    model.MemberId, model.SessionId);
+            }
 
             return Result.Ok("Booking created successfully");
         }
@@ -217,6 +247,114 @@ public class BookingService(IUnitOfWork uow, ILogger<BookingService> logger) : I
             _logger.LogError(ex, "Error marking attendance for member {MemberId} in session {SessionId}",
                 memberId, sessionId);
             return Result.Fail("Failed to mark attendance", "DATABASE_ERROR");
+        }
+    }
+
+    public async Task<Result<ResultCheckInDTO>> CheckInViaQRAsync(int memberId, CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Processing QR check-in for member {MemberId}", memberId);
+
+            // 1. Validate member exists
+            var member = await _uow.Members.GetByIdAsync(memberId, ct);
+            if (member == null)
+            {
+                return Result.Fail<ResultCheckInDTO>("Member not found", "MEMBER_NOT_FOUND");
+            }
+
+            // 2. Check active membership
+            var hasActivePlan = await _uow.Memberships.IsMemberAlreadyHasActivePlanAsync(memberId, ct);
+            if (!hasActivePlan)
+            {
+                return Result.Fail<ResultCheckInDTO>("Member does not have an active membership", "NO_ACTIVE_MEMBERSHIP");
+            }
+
+            // 3. Find the CURRENT active session
+            var now = DateTime.Now;
+            var currentSession = await _uow.Sessions.GetActiveSessionAtTimeAsync(now, ct);
+
+            if (currentSession == null)
+            {
+                return Result.Fail<ResultCheckInDTO>("No active session right now", "NO_ACTIVE_SESSION");
+            }
+
+            // 4. Check capacity
+            var bookingCount = currentSession.Bookings?.Count(b => !b.IsDeleted) ?? 0;
+            var availableSlots = currentSession.Capacity - bookingCount;
+
+            _logger.LogInformation("Session {SessionId} - Capacity: {Capacity}, Bookings: {Bookings}, Available: {Available}",
+                currentSession.Id, currentSession.Capacity, bookingCount, availableSlots);
+
+            if (availableSlots <= 0)
+            {
+                return Result.Fail<ResultCheckInDTO>("Session is full. No available slots.", "SESSION_FULL");
+            }
+
+            // 5. Check if member already has a booking for this session
+            var existingBooking = currentSession.Bookings?.FirstOrDefault(b => b.MemberId == memberId && !b.IsDeleted);
+
+            if (existingBooking != null)
+            {
+                if (existingBooking.IsAttended)
+                {
+                    return Result.Ok(new ResultCheckInDTO
+                    {
+                        MemberName = member.Name,
+                        SessionName = currentSession.Category?.Name ?? "Session",
+                        IsAlreadyAttended = true,
+                        WasAutoBooked = false
+                    });
+                }
+
+                existingBooking.IsAttended = true;
+                existingBooking.AttendanceMarkedAt = DateTime.Now;
+                await _uow.SaveChangesAsync(ct);
+
+                return Result.Ok(new ResultCheckInDTO
+                {
+                    MemberName = member.Name,
+                    SessionName = currentSession.Category?.Name ?? "Session",
+                    IsAlreadyAttended = false,
+                    WasAutoBooked = false
+                });
+            }
+
+            // 6. No booking exists - AUTO-CREATE (Walk-in)
+            var newBooking = new Booking
+            {
+                MemberId = memberId,
+                SessionId = currentSession.Id,
+                BookingDate = DateTime.Now,
+                IsAttended = true,
+                AttendanceMarkedAt = DateTime.Now
+            };
+
+            await _uow.Bookings.AddAsync(newBooking, ct);
+            await _uow.SaveChangesAsync(ct);
+
+            // Generate QR code for future use
+            try
+            {
+                await _qrService.GenerateMemberQrPngAsync(memberId, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to generate QR for walk-in booking");
+            }
+
+            return Result.Ok(new ResultCheckInDTO
+            {
+                MemberName = member.Name,
+                SessionName = currentSession.Category?.Name ?? "Session",
+                IsAlreadyAttended = false,
+                WasAutoBooked = true
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing QR check-in for member {MemberId}", memberId);
+            return Result.Fail<ResultCheckInDTO>("An error occurred during check-in", "CHECKIN_ERROR");
         }
     }
 

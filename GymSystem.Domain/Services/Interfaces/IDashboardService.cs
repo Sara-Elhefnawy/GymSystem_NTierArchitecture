@@ -1,7 +1,7 @@
 ﻿using GymSystem.Domain.DTOs.Home;
 using GymSystem.Shared.Common;
 
-namespace GymSystem.Domain.Services;
+namespace GymSystem.Domain.Services.Interfaces;
 
 public interface IDashboardService
 {

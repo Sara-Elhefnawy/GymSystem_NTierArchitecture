@@ -18,6 +18,4 @@ public class IndexSessionDTO
     public int AvailableSlots { get; set; }
 
     public SessionStatus Status { get; set; }
-
-    //public TimeSpan Duration => EndDate - StartDate;
 }

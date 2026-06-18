@@ -4,6 +4,7 @@ using GymSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GymSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(GymAppDbContext))]
-    partial class GymAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260618132212_Add_AttendanceMarkedAt_In_Booking")]
+    partial class Add_AttendanceMarkedAt_In_Booking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -69,7 +72,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("Bookings", (string)null);
+                    b.ToTable("Bookings");
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Category", b =>
@@ -102,7 +105,7 @@ namespace GymSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.GymUser", b =>
@@ -163,7 +166,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("GymUsers", null, t =>
+                    b.ToTable("GymUsers", t =>
                         {
                             t.HasCheckConstraint("GymUser_EmailCheck", "Email LIKE '_%@_%._%'");
 
@@ -222,7 +225,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("HealthRecord", (string)null);
+                    b.ToTable("HealthRecord");
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Membership", b =>
@@ -267,7 +270,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("Memberships", (string)null);
+                    b.ToTable("Memberships");
                 });
 
             modelBuilder.Entity("GymSystem.Infrastructure.Entities.Plan", b =>
@@ -315,7 +318,7 @@ namespace GymSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("Plans", null, t =>
+                    b.ToTable("Plans", t =>
                         {
                             t.HasCheckConstraint("PlanDurationCheck", "DurationDays Between 1 and 365");
                         });
@@ -367,7 +370,7 @@ namespace GymSystem.Infrastructure.Migrations
 
                     b.HasIndex("TrainerId");
 
-                    b.ToTable("Sessions", null, t =>
+                    b.ToTable("Sessions", t =>
                         {
                             t.HasCheckConstraint("CK_Session_Capacity", "[Capacity] BETWEEN 1 AND 25");
 
@@ -676,7 +679,7 @@ namespace GymSystem.Infrastructure.Migrations
 
                             b1.HasKey("GymUserId");
 
-                            b1.ToTable("GymUsers", (string)null);
+                            b1.ToTable("GymUsers");
 
                             b1.WithOwner()
                                 .HasForeignKey("GymUserId");

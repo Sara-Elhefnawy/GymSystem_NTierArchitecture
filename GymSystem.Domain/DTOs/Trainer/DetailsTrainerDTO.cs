@@ -6,8 +6,6 @@ public class DetailsTrainerDTO
 
     public string Name { get; set; } = default!;
 
-    public string? Photo { get; set; }
-
     public string Specialty { get; set; } = default!;
 
     public string Email { get; set; } = default!;

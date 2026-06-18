@@ -1,4 +1,5 @@
-using GymSystem.Domain.Services;
+using GymSystem.Domain.Services.Interfaces;
+using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels;
 using GymSystem.UI.ViewModels.Home;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +17,7 @@ public class HomeController(IDashboardService dashboard) : Controller
 
         if (result.IsFailure)
         {
-            TempData["Error"] = "Unable to load statistics. Please try again.";
+            this.HandleErrorResult(result);  // Use the error handler
             return View(new List<DashboardHomeViewModel>());
         }
 
@@ -31,11 +32,6 @@ public class HomeController(IDashboardService dashboard) : Controller
         };
 
         return View(viewModels);
-    }
-
-    public IActionResult Privacy()
-    {
-        return View();
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

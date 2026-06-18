@@ -2,6 +2,7 @@
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Booking;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -25,10 +26,10 @@ public class BookingController(
         if (result.IsFailure)
         {
             this.HandleErrorResult(result);
-            return View(new List<SessionViewModel>());
+            return View(new List<IndexBookingViewModel>());
         }
 
-        var viewModel = result.Value.Select(b => new SessionViewModel
+        var viewModel = result.Value.Select(b => new IndexBookingViewModel
         {
             AvailableSlots = b.AvailableSlots,
             Capacity = b.Capacity,
@@ -94,6 +95,7 @@ public class BookingController(
     }
 
     [HttpGet("Create/{id}")]
+    [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> Create(int id, CancellationToken ct = default)
     {
         var membersResult = await _members.GetMembersWithActiveMembershipAsync(ct);
@@ -114,6 +116,7 @@ public class BookingController(
 
     [HttpPost("Create/{id}")]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> Create(int id, [FromForm] CreateBookingViewModel model, CancellationToken ct)
     {
         model.SessionId = id;
