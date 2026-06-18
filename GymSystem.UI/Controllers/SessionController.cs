@@ -181,7 +181,7 @@ public class SessionController(
             TrainerName = result.Value.TrainerName,
             StartDate = result.Value.StartDate,
             EndDate = result.Value.EndDate,
-            MaxCapacity = result.Value.MaxCapacity,
+            Capacity = result.Value.Capacity,
             AvailableSlots = result.Value.AvailableSlots,
             Description = result.Value.Description,
             Status = result.Value.Status
@@ -215,7 +215,7 @@ public class SessionController(
         {
             Id = id,
             CategoryName = detailsResult.Value.CategoryName,
-            MaxCapacity = detailsResult.Value.MaxCapacity,
+            MaxCapacity = detailsResult.Value.Capacity,
             TrainerId = editResult.Value.TrainerId,
             Description = editResult.Value.Description,
             StartDate = editResult.Value.StartDate,
@@ -266,7 +266,7 @@ public class SessionController(
 
         // Populate non-editable fields from the session details
         model.CategoryName = detailsResult.Value.CategoryName;
-        model.MaxCapacity = detailsResult.Value.MaxCapacity;
+        model.MaxCapacity = detailsResult.Value.Capacity;
         model.Status = detailsResult.Value.Status.ToString();
         model.CanEdit = detailsResult.Value.StartDate > DateTime.Now;
 

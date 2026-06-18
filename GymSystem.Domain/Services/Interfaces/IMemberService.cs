@@ -7,6 +7,7 @@ namespace GymSystem.Domain.Services.Interfaces;
 public interface IMemberService
 {
     Task<Result<IReadOnlyList<IndexMemberDTO>>> GetAllAsync(CancellationToken ct = default);
+    Task<Result<IReadOnlyList<IndexMemberDTO>>> GetMembersWithActiveMembershipAsync(CancellationToken ct = default);
 
     Task<Result> CreateAsync(CreateMemberDTO model, CancellationToken ct = default);
 

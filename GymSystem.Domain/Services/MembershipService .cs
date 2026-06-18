@@ -38,7 +38,7 @@ public class MembershipService(IUnitOfWork uow, ILogger<MembershipService> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting active memberships");
-            return Result.Fail<IEnumerable<IndexMembershipDTO>>("Failed to retrieve memberships");
+            return Result.Fail<IEnumerable<IndexMembershipDTO>>("Failed to retrieve memberships", "DATABASE_ERROR");
         }
     }
 
@@ -54,7 +54,7 @@ public class MembershipService(IUnitOfWork uow, ILogger<MembershipService> logge
             if (member == null)
             {
                 _logger.LogWarning("Member {MemberId} not found", model.MemberId);
-                return Result.Fail("Member not found");
+                return Result.Fail("Member not found", "MEMBER_NOT_FOUND");
             }
 
             // Validate plan exists
@@ -62,14 +62,14 @@ public class MembershipService(IUnitOfWork uow, ILogger<MembershipService> logge
             if (plan == null)
             {
                 _logger.LogWarning("Plan {PlanId} not found", model.PlanId);
-                return Result.Fail("Plan not found");
+                return Result.Fail("Plan not found", "PLAN_NOT_FOUND");
             }
 
             // Check if member already has active membership
             if (await uow.Memberships.IsMemberAlreadyHasActivePlanAsync(model.MemberId, ct))
             {
                 _logger.LogWarning("Member {MemberId} already has an active membership", model.MemberId);
-                return Result.Fail("Member already has an active membership");
+                return Result.Fail("Member already has an active membership", "ALREADY_ACTIVE");
             }
 
             // Create membership
@@ -79,7 +79,6 @@ public class MembershipService(IUnitOfWork uow, ILogger<MembershipService> logge
                 PlanId = model.PlanId,
                 StartDate = DateOnly.FromDateTime(DateTime.Now),
                 EndDate = DateOnly.FromDateTime(DateTime.Now.AddDays(plan.DurationDays)),
-                //IsActive = true
             };
 
             await uow.Memberships.AddAsync(membership, ct);
@@ -92,7 +91,7 @@ public class MembershipService(IUnitOfWork uow, ILogger<MembershipService> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating membership for member {MemberId}", model.MemberId);
-            return Result.Fail("Failed to create membership");
+            return Result.Fail("Failed to create membership", "DATABASE_ERROR");
         }
     }
 
@@ -107,7 +106,7 @@ public class MembershipService(IUnitOfWork uow, ILogger<MembershipService> logge
             if (!result)
             {
                 _logger.LogWarning("No active membership found for member {MemberId}", memberId);
-                return Result.Fail("No active membership found");
+                return Result.Fail("No active membership found", "MEMBERSHIP_NOT_FOUND");
             }
 
             await uow.SaveChangesAsync(ct);
@@ -119,7 +118,7 @@ public class MembershipService(IUnitOfWork uow, ILogger<MembershipService> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cancelling membership for member {MemberId}", memberId);
-            return Result.Fail("Failed to cancel membership");
+            return Result.Fail("Failed to cancel membership", "DATABASE_ERROR");
         }
     }
 
@@ -137,7 +136,7 @@ public class MembershipService(IUnitOfWork uow, ILogger<MembershipService> logge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error checking active plan for member {MemberId}", memberId);
-            return Result.Fail<bool>("Failed to check active plan");
+            return Result.Fail<bool>("Failed to check active plan", "DATABASE_ERROR");
         }
     }
 }

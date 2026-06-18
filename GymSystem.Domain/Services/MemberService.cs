@@ -45,6 +45,37 @@ public class MemberService(IUnitOfWork uow, ILogger<MemberService> logger, IAtta
         }
     }
 
+    public async Task<Result<IReadOnlyList<IndexMemberDTO>>> GetMembersWithActiveMembershipAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Getting members with active memberships");
+
+            var members = await _uow.Members.GetMembersWithActiveMembershipAsync(ct);
+
+            var dtos = members.Select(m =>
+            {
+                return new IndexMemberDTO
+                {
+                    Id = m.Id,
+                    Name = m.Name,
+                    Email = m.Email,
+                    Phone = m.Phone,
+                    Photo = m.Photo
+                };
+            }).ToList();
+
+            _logger.LogInformation("Retrieved {Count} members with active memberships", dtos.Count());
+
+            return Result.Ok<IReadOnlyList<IndexMemberDTO>>(dtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting members with active memberships");
+            return Result.Fail<IReadOnlyList<IndexMemberDTO>>("Failed to retrieve members", "DATABASE_ERROR");
+        }
+    }
+
     public async Task<Result> CreateAsync(CreateMemberDTO model, CancellationToken ct = default)
     {
         string? uploadedPhotoPath = null;

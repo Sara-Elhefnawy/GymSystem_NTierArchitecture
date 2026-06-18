@@ -11,7 +11,7 @@ public class DetailsSessionViewModel
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public int AvailableSlots { get; set; }
-    public int MaxCapacity { get; set; }
+    public int Capacity { get; set; }
     public SessionStatus Status { get; set; }
 
     public string DurationText

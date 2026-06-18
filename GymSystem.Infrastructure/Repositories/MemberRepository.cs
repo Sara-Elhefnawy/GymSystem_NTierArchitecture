@@ -9,18 +9,20 @@ public class MemberRepository(GymAppDbContext dbContext) : Repository<Member>(db
 {
     private readonly DbSet<Member> _dbSet = dbContext.Set<Member>();
 
-    //public async Task<Member?> GetWithBookingsAsync(int id, CancellationToken ct = default)
-    //    => await _dbSet.Include(m => m.Bookings)
-    //        .FirstOrDefaultAsync(m => m.Id == id, ct);
-
     public async Task<Member?> GetWithMembershipDetailsAsync(int id, CancellationToken ct = default)
         => await _dbSet.Include(m => m.Memberships)
             .ThenInclude(ms => ms.Plan)
             .FirstOrDefaultAsync(m => m.Id == id, ct);
 
-    //public async Task<Member?> GetWithHealthRecordAsync(int id, CancellationToken ct = default)
-    //    => await _dbSet.Include(m => m.HealthRecord)
-    //        .FirstOrDefaultAsync(m => m.Id == id, ct);
+    public async Task<IReadOnlyList<Member>> GetMembersWithActiveMembershipAsync(CancellationToken ct = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
+        return await _dbSet.Where(m => m.Memberships.Any(mem => mem.EndDate >= today))
+            .Include(m => m.Memberships)
+            .OrderBy(m => m.Name)
+            .ToListAsync(ct);
+    }
 
     public async Task<bool> IsEmailTakenAsync(string normalizedEmail, int? excludeMemberId = null, CancellationToken ct = default)
         => await _dbSet.AnyAsync(m => m.Email == normalizedEmail && (!excludeMemberId.HasValue || m.Id != excludeMemberId.Value), ct);

@@ -130,7 +130,7 @@ public class SessionService : ISessionService
                 StartDate = session.StartDate,
                 EndDate = session.EndDate,
                 AvailableSlots = session.Bookings.Count,
-                MaxCapacity = session.Capacity,
+                Capacity = session.Capacity,
                 Status = GetStatus(session.StartDate, session.EndDate, DateTime.Now)
             };
 

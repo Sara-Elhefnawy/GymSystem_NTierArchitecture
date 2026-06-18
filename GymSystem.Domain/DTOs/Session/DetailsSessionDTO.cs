@@ -11,6 +11,6 @@ public class DetailsSessionDTO
     public DateTime StartDate { get; init; }
     public DateTime EndDate { get; init; }
     public int AvailableSlots { get; init; }
-    public int MaxCapacity { get; init; }
+    public int Capacity { get; init; }
     public SessionStatus Status { get; init; }
 }

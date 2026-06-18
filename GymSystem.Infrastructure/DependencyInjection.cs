@@ -2,6 +2,7 @@
 using GymSystem.Infrastructure.Interceptor;
 using GymSystem.Infrastructure.QueryService;
 using GymSystem.Infrastructure.Repositories;
+using GymSystem.Infrastructure.Repositories.Interfaces;
 using GymSystem.Infrastructure.Seeders;
 using GymSystem.Infrastructure.Services;
 using GymSystem.Infrastructure.UnitOfWorks;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<ITrainerRepository, TrainerRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IMembershipRepository, MembershipRepository>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

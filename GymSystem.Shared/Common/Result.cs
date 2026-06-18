@@ -25,13 +25,6 @@ public abstract class Result : IResult
 
     public static Result<T> Ok<T>(T value) => new SuccessResult<T>(value);
     public static Result<T> Fail<T>(string error, string? errorKey = null) => new FailureResult<T>(error, errorKey);
-
-    // For validation errors with field-specific messages
-    public static Result ValidationError(string error, Dictionary<string, string> fieldErrors = null, string? errorKey = null)
-        => new ValidationErrorResult(error, fieldErrors, errorKey);
-
-    public static Result<T> ValidationError<T>(string error, Dictionary<string, string> fieldErrors = null, string? errorKey = null)
-        => new ValidationErrorResult<T>(error, fieldErrors, errorKey);
 }
 
 // Success result

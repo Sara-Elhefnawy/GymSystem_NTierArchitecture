@@ -1,13 +1,14 @@
-﻿@model CreateMembershipViewModel
+﻿@model CreateBookingViewModel
 
 @{
-    ViewData["Title"] = "Create Membership";
+    ViewData["Title"] = "Create Booking";
+    var sessionId = ViewContext.RouteData.Values["id"] ?? ViewData["SessionId"];
 }
 
 <div class="container mt-4">
     <header class="mb-4">
-        <h3 class="text-primary-color">Create New Membership</h3>
-        <p class="text-muted">Assign a plan to a member</p>
+        <h3 class="text-primary-color">Create New Booking</h3>
+        <p class="text-muted">Assign a member to this session</p>
     </header>
 
     <div class="row justify-content-center">
@@ -16,6 +17,8 @@
                 <div class="card-body p-4">
                     <form asp-action="Create" method="post">
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <input type="hidden" asp-for="SessionId" />
 
                         <div class="row g-3">
                             <div class="col-12">
@@ -26,25 +29,19 @@
                                     <option value="">-- Select Member --</option>
                                 </select>
                                 <span asp-validation-for="MemberId" class="text-danger"></span>
-                            </div>
-
-                            <div class="col-12">
-                                <label asp-for="PlanId" class="form-label fw-semibold">
-                                    Plan <span class="text-danger">*</span>
-                                </label>
-                                <select asp-for="PlanId" class="form-select" asp-items="ViewBag.Plans">
-                                    <option value="">-- Select Plan --</option>
-                                </select>
-                                <span asp-validation-for="PlanId" class="text-danger"></span>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Only members with active memberships are shown
+                                </small>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4 pt-3 border-top">
-                            <a asp-action="Index" class="btn btn-outline-secondary">
+                            <a asp-action="GetMembersForUpcomingSession" asp-route-id="@sessionId" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-lg me-1"></i> Create Membership
+                                <i class="bi bi-check-lg me-1"></i> Create Booking
                             </button>
                         </div>
                     </form>
@@ -60,12 +57,6 @@
         $(document).ready(function() {
             $('#MemberId').select2({
                 placeholder: "Select a member",
-                allowClear: true,
-                width: '100%'
-            });
-
-            $('#PlanId').select2({
-                placeholder: "Select a plan",
                 allowClear: true,
                 width: '100%'
             });

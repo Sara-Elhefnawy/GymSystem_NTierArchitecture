@@ -9,13 +9,18 @@ public class SessionRepository(GymAppDbContext dbContext) : Repository<Session>(
 {
     private readonly DbSet<Session> _dbSet = dbContext.Set<Session>();
 
-    //public async Task<IReadOnlyList<Session>> GetAllWithDetailsAsync(CancellationToken ct = default)
-    //    => await _dbSet
-    //        .Include(s => s.Category)
-    //        .Include(s => s.Trainer)
-    //        .Include(s => s.Bookings)
-    //        .AsNoTracking()
-    //        .ToListAsync(ct);
+    public async Task<IReadOnlyList<Session>> GetAllWithBookingsAsync(CancellationToken ct = default)
+        => await _dbSet.Include(s => s.Category)
+            .Include(s => s.Trainer)
+            .Include(s => s.Bookings)
+            .OrderBy(s => s.StartDate)
+            .ToListAsync(ct);
+
+    public async Task<Session?> GetByIdWithBookingsAsync(int id, CancellationToken ct = default)
+        => await _dbSet.Include(s => s.Category)
+            .Include(s => s.Trainer)
+            .Include(s => s.Bookings)
+            .FirstOrDefaultAsync(s => s.Id == id, ct);
 
     public async Task<bool> HasUpcomingSessionsForTrainerAsync(int trainerId, DateTime utcNow, CancellationToken ct = default)
         => await _dbSet

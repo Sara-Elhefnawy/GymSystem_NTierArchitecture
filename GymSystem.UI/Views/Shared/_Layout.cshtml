@@ -66,7 +66,8 @@
                                    aria-current="@(Active("Membership") == "active" ? "page" : null)" asp-controller="Membership" asp-action="Index">Memberships</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link  px-3 py-2 mx-2 fw-bolder fs-5" aria-current="page" href="#">Sessions Schedule</a>
+                                <a class="nav-link  px-3 py-2 mx-2 fw-bolder fs-5 @Active("Booking")"
+                                   aria-current="@(Active("Booking") == "active" ? "page" : null)" asp-controller="Booking" asp-action="Index">Sessions Schedule</a>
                             </li>
 
                             @if (User.Identity?.IsAuthenticated == true)

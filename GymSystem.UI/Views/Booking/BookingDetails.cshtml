@@ -1,0 +1,169 @@
+﻿@model IReadOnlyList<SessionInBookingViewModel>
+
+@{
+    ViewData["Title"] = "Booking Details";
+    var sessionId = ViewContext.RouteData.Values["id"] ?? ViewData["SessionId"];
+}
+
+<div class="container">
+    <header class="d-flex justify-content-between mt-5 mb-4 align-items-center">
+        <div>
+            <h2 class="text-primary-color mb-0">Booking Details</h2>
+            <p class="text-muted">Manage member bookings for this session</p>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left me-1"></i> Back to Sessions
+            </a>
+            <a asp-action="Create" asp-route-id="@sessionId" class="btn btn-fill fw-medium rounded-pill px-4 py-3">
+                <i class="bi bi-plus-lg me-2"></i>Add Booking
+            </a>
+        </div>
+    </header>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">#</th>
+                                <th>Member</th>
+                                <th>Booking Date</th>
+                                <th>Status</th>
+                                <th class="text-center pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int counter = 1;
+                            }
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4">@counter</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="@Url.Action("GetPhoto", "Member", new { id = item.MemberId })"
+                                                 class="rounded-circle"
+                                                 style="width:40px;height:40px;object-fit:cover;"
+                                                 onerror="this.src='/images/User.png'" />
+                                            <span class="ms-2 fw-medium">@item.MemberName</span>
+                                        </div>
+                                    </td>
+                                    <td>@(item.BookingDate?.ToString("MMM dd, yyyy hh:mm tt") ?? "N/A")</td>
+                                    <td>
+                                        @if (item.IsAttended)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle-fill me-1"></i> Attended
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-clock-fill me-1"></i> Pending
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#cancelBookingModal"
+                                                data-memberid="@item.MemberId"
+                                                data-sessionid="@item.SessionId"
+                                                data-membername="@item.MemberName">
+                                            <i class="bi bi-x-circle me-1"></i>Cancel
+                                        </button>
+                                    </td>
+                                </tr>
+                                counter++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-success">@Model.Count(x => x.IsAttended) Attended</span>
+                        <span class="badge bg-warning text-dark ms-1">@Model.Count(x => !x.IsAttended) Pending</span>
+                    </div>
+                    <span class="text-muted">Total: @Model.Count() bookings</span>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-person-workspace display-1 text-muted"></i>
+            <h4 class="mt-3 text-muted">No Bookings</h4>
+            <p class="text-muted">No members have booked this session yet</p>
+            <a asp-action="Create" asp-route-id="@sessionId" class="btn btn-fill fw-medium rounded-pill px-4 py-3 mt-3">
+                <i class="bi bi-plus-lg me-2"></i>Add Booking
+            </a>
+        </div>
+    }
+</div>
+
+<!-- Cancel Booking Modal -->
+<div class="modal fade" id="cancelBookingModal" tabindex="-1" aria-labelledby="cancelBookingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="cancelBookingModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Cancel Booking
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-calendar-x display-3 text-danger"></i>
+                </div>
+                <h5 class="text-center mb-3">Are you sure?</h5>
+                <p class="text-center text-muted">
+                    You are about to cancel the booking for <strong id="bookingMemberNameDisplay"></strong>.
+                </p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle me-2"></i>
+                    This will free up a slot for other members. The member will be notified of the cancellation.
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i> Keep Booking
+                </button>
+                <form method="post" asp-action="Cancel" asp-controller="Booking">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="memberId" id="cancelBookingMemberId" />
+                    <input type="hidden" name="sessionId" id="cancelBookingSessionId" />
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-check-lg me-1"></i> Yes, Cancel
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function() {
+            $('#cancelBookingModal').on('show.bs.modal', function(event) {
+                var button = $(event.relatedTarget);
+                var memberId = button.data('memberid');
+                var sessionId = button.data('sessionid');
+                var memberName = button.data('membername');
+
+                var modal = $(this);
+                modal.find('#cancelBookingMemberId').val(memberId);
+                modal.find('#cancelBookingSessionId').val(sessionId);
+                modal.find('#bookingMemberNameDisplay').text(memberName);
+            });
+        });
+    </script>
+}

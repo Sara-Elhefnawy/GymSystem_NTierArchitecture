@@ -1,5 +1,6 @@
 ﻿using GymSystem.Domain.DTOs.Memberships;
 using GymSystem.Domain.Services.Interfaces;
+using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Memberships;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -23,7 +24,7 @@ public class MembershipController(
 
         if (result.IsFailure)
         {
-            TempData["Error"] = result.Error;
+            this.HandleErrorResult(result);
             return View(new List<IndexMembershipViewModel>());
         }
 
@@ -81,7 +82,13 @@ public class MembershipController(
             return RedirectToAction(nameof(Index));
         }
 
-        TempData["Error"] = result.Error;
+        ErrorHandler.HandleError(result, ModelState);
+
+        if (result.ErrorKey == "ALREADY_ACTIVE")
+        {
+            TempData["Info"] = "You can view the active membership in the list below.";
+        }
+
         await PopulateDropdowns(ct);
         return View(model);
     }
@@ -92,8 +99,14 @@ public class MembershipController(
     {
         var result = await _membershipService.CancelMembershipAsync(id, ct);
 
-        TempData[result.IsSuccess ? "Success" : "Error"] =
-            result.IsSuccess ? "Membership cancelled." : result.Error;
+        if (result.IsSuccess)
+        {
+            TempData["Success"] = "Membership cancelled successfully.";
+        }
+        else
+        {
+            this.HandleErrorResult(result);
+        }
 
         return RedirectToAction(nameof(Index));
     }
