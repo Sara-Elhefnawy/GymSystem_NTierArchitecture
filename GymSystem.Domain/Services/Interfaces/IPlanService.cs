@@ -5,7 +5,7 @@ namespace GymSystem.Domain.Services.Interfaces;
 
 public interface IPlanService
 {
-    Task<Result<IReadOnlyList<IndexPlanDTO>>> GetAllAsync(CancellationToken ct = default);
+    Task<Result<IReadOnlyList<IndexPlanDTO>>> GetActivePlansAsync(CancellationToken ct = default);
 
     Task<Result<DetailsPlanDTO>> GetDetailsAsync(int id, CancellationToken ct = default);
 

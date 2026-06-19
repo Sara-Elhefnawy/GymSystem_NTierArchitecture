@@ -13,7 +13,7 @@ public class PlanController(IPlanService plans) : Controller
     [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var result = await plans.GetAllAsync(ct);
+        var result = await plans.GetActivePlansAsync(ct);
 
         if (!result.IsSuccess)
         {
@@ -60,7 +60,7 @@ public class PlanController(IPlanService plans) : Controller
 
     [HttpGet("Edit/{id:int}")]
     [Authorize(Roles = "SuperAdmin")]
-    public async Task<IActionResult> Edit(int id, CancellationToken ct)
+    public async Task<IActionResult> Edit([FromRoute]int id, CancellationToken ct)
     {
         var result = await plans.GetForEditAsync(id, ct);
 
@@ -90,7 +90,7 @@ public class PlanController(IPlanService plans) : Controller
     [HttpPost("Edit/{id:int}")]
     [ValidateAntiForgeryToken]
     [Authorize(Roles = "SuperAdmin")]
-    public async Task<IActionResult> Edit(int id, EditPlanDTO model, CancellationToken ct)
+    public async Task<IActionResult> Edit([FromRoute] int id, EditPlanDTO model, CancellationToken ct)
     {
         if (id != model.Id)
             return NotFound();

@@ -10,7 +10,6 @@ public interface ISessionRepository : IRepository<Session>
     Task<Session?> GetByIdWithBookingsAsync(int id, CancellationToken ct = default);
     Task<IEnumerable<Session>> GetSessionsForDateAsync(DateTime date, CancellationToken ct = default);
     Task<Session?> GetActiveSessionAtTimeAsync(DateTime time, CancellationToken ct = default);
-    Task<IEnumerable<Session>> GetActiveSessionsAtTimeAsync(DateTime time, CancellationToken ct = default);
     Task<bool> HasTrainerConflictAsync(
         int trainerId,
         DateTime start,

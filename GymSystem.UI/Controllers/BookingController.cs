@@ -49,7 +49,7 @@ public class BookingController(
     [HttpGet("GetMembersForUpcomingSession/{id}")]
     public async Task<IActionResult> GetMembersForUpcomingSession(int id, CancellationToken ct = default)
     {
-        var result = await _bookings.GetMembersForUpcomingSessionAsync(id, ct);
+        var result = await _bookings.GetMembersForSessionAsync(id, ct);
 
         if (result.IsFailure)
         {
@@ -73,7 +73,7 @@ public class BookingController(
     [HttpGet("GetMembersForOngoingSessions/{id}")]
     public async Task<IActionResult> GetMembersForOngoingSessions(int id, CancellationToken ct = default)
     {
-        var result = await _bookings.GetMembersForOngoingSessionAsync(id, ct);
+        var result = await _bookings.GetMembersForSessionAsync(id, ct);
 
         if (result.IsFailure)
         {

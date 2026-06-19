@@ -10,46 +10,90 @@
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
                     <form asp-action="Edit" method="post">
-
                         @Html.AntiForgeryToken()
 
                         <div class="row g-3">
+                            <!-- Read-only Name Field -->
                             <div class="col-12">
                                 <label asp-for="Name" class="form-label fw-semibold">
                                     Plan Name <span class="text-danger">*</span>
                                 </label>
-                                <input asp-for="Name" class="form-control" readonly />
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="bi bi-lock-fill text-muted"></i>
+                                    </span>
+                                    <input asp-for="Name" class="form-control bg-light" readonly />
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Plan name cannot be modified. Create a new plan to change the name.
+                                </small>
+                                <span asp-validation-for="Name" class="text-danger d-block"></span>
                             </div>
 
+                            <!-- Editable Duration -->
                             <div class="col-md-6">
                                 <label asp-for="DurationDays" class="form-label fw-semibold">
                                     Duration (Days) <span class="text-danger">*</span>
                                 </label>
-                                <input asp-for="DurationDays" type="number" class="form-control" />
-                                <small class="text-muted">e.g., 30 days = 1 month</small>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="bi bi-calendar3 text-primary-color"></i>
+                                    </span>
+                                    <input asp-for="DurationDays" type="number" class="form-control"
+                                           min="1" max="365" />
+                                </div>
+                                <small class="text-muted">e.g., 30 days = 1 month, 365 days = 1 year</small>
                                 <span asp-validation-for="DurationDays" class="text-danger d-block"></span>
                             </div>
 
+                            <!-- Editable Price -->
                             <div class="col-md-6">
                                 <label asp-for="Price" class="form-label fw-semibold">
                                     Price (EGP) <span class="text-danger">*</span>
                                 </label>
-                                <input asp-for="Price" type="number" step="0.01" class="form-control" />
-                                <span asp-validation-for="Price" class="text-danger"></span>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="bi bi-currency-pound text-primary-color"></i>
+                                    </span>
+                                    <input asp-for="Price" type="number" step="0.01" class="form-control"
+                                           min="0" />
+                                </div>
+                                <small class="text-muted">Enter the price in Egyptian Pounds</small>
+                                <span asp-validation-for="Price" class="text-danger d-block"></span>
                             </div>
 
+                            <!-- Editable Description -->
                             <div class="col-12">
                                 <label asp-for="Description" class="form-label fw-semibold">
                                     Description <span class="text-danger">*</span>
                                 </label>
-                                <textarea asp-for="Description" class="form-control" rows="4"></textarea>
-                                <span asp-validation-for="Description" class="text-danger"></span>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light" style="align-items: flex-start; padding-top: 0.75rem;">
+                                        <i class="bi bi-text-paragraph text-primary-color"></i>
+                                    </span>
+                                    <textarea asp-for="Description" class="form-control" rows="4"
+                                              placeholder="Describe the plan benefits and features..."></textarea>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Provide a clear description of what this plan includes
+                                </small>
+                                <span asp-validation-for="Description" class="text-danger d-block"></span>
                             </div>
+
                         </div>
+
+                        <!-- Action Buttons -->
                         <div class="d-flex justify-content-between mt-4 pt-3 border-top">
-                            <a asp-action="Index" class="btn btn-outline">
-                                <i class="bi bi-arrow-left me-1"></i>Cancel
-                            </a>
+                            <div>
+                                <a asp-action="Index" class="btn btn-outline">
+                                    <i class="bi bi-arrow-left me-1"></i>Cancel
+                                </a>
+                                <button type="reset" class="btn btn-outline-secondary ms-2">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                                </button>
+                            </div>
                             <button type="submit" class="btn btn-fill">
                                 <i class="bi bi-check-lg me-1"></i>Update Plan
                             </button>
@@ -60,6 +104,33 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Style for readonly field */
+    .form-control[readonly] {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+    }
+
+    /* Style for input group text */
+    .input-group-text {
+        border: 1px solid #ced4da;
+        background-color: #f8f9fa;
+    }
+
+    /* Hover effect for editable fields */
+    .form-control:not([readonly]):focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Alert styling */
+    .alert-info {
+        background-color: #e7f5ff;
+        border-color: #b6d4fe;
+        color: #0c63e4;
+    }
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

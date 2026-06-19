@@ -1,4 +1,5 @@
 ﻿using GymSystem.Domain.Attachments;
+using GymSystem.Domain.Mappings;
 using GymSystem.Domain.QRCode;
 using GymSystem.Domain.Services;
 using GymSystem.Domain.Services.Interfaces;
@@ -25,6 +26,12 @@ public static class DependencyInjection
 
         services.AddScoped<IQrService, QrService>();
         services.Configure<QrCodeSettings>(configuration.GetSection("QrCodeSettings"));
+
+        services.AddAutoMapper(cfg =>
+        {
+            cfg.AddProfile<MemberProfile>();
+            cfg.AddProfile<HealthRecordProfile>();
+        }, typeof(MemberProfile).Assembly);
 
         return services;
     }

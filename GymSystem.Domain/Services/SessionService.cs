@@ -1,4 +1,5 @@
-﻿using GymSystem.Domain.DTOs.Session;
+﻿using AutoMapper;
+using GymSystem.Domain.DTOs.Session;
 using GymSystem.Domain.DTOs.Session.Enums;
 using GymSystem.Domain.Services.Interfaces;
 using GymSystem.Infrastructure.Entities;
@@ -9,44 +10,31 @@ using Microsoft.Extensions.Logging;
 
 namespace GymSystem.Domain.Services;
 
-public class SessionService : ISessionService
+public class SessionService(
+    ISessionQueryService sessionQueryService,
+    IUnitOfWork uow,
+    ILogger<SessionService> logger,
+    IMapper mapper) : ISessionService
 {
-    private readonly IUnitOfWork _uow;
-    private readonly ILogger<SessionService> _logger;
-    private readonly ISessionQueryService _sessionQueryService;
-
-    public SessionService(ISessionQueryService sessionQueryService, IUnitOfWork uow, ILogger<SessionService> logger)
-    {
-        _sessionQueryService = sessionQueryService;
-        _uow = uow;
-        _logger = logger;
-    }
-
     public async Task<Result<IReadOnlyList<IndexSessionDTO>>> GetAllAsync(CancellationToken ct = default)
     {
         try
         {
-            var sessions = await _sessionQueryService.GetIndexItemsAsync(ct);
-            var dtoList = sessions.Select(session => {
-                return new IndexSessionDTO
-                {
-                    Id = session.Id,
-                    CategoryName = session.CategoryName,
-                    Description = session.Description,
-                    TrainerName = session.TrainerName,
-                    StartDate = session.StartDate,
-                    EndDate = session.EndDate,
-                    MaxCapacity = session.MaxCapacity,
-                    AvailableSlots = session.AvailableSlots,
-                    Status = GetStatus(session.StartDate, session.EndDate, DateTime.Now)
-                };
-            }).ToList();
+            var sessions = await sessionQueryService.GetIndexItemsAsync(ct);
 
-            return Result.Ok<IReadOnlyList<IndexSessionDTO>>(dtoList);
+            var dtoList = mapper.Map<IReadOnlyList<IndexSessionDTO>>(sessions);
+
+            // Set the Status for each DTO (calculated)
+            foreach (var dto in dtoList)
+            {
+                dto.Status = GetStatus(dto.StartDate, dto.EndDate, DateTime.Now);
+            }
+
+            return Result.Ok(dtoList);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting all sessions");
+            logger.LogError(ex, "Error getting all sessions");
             return Result.Fail<IReadOnlyList<IndexSessionDTO>>("Failed to retrieve sessions", "DATABASE_ERROR");
         }
     }
@@ -67,39 +55,31 @@ public class SessionService : ISessionService
             if (model.Capacity < 1 || model.Capacity > 25)
                 return Result.Fail("Session capacity must be between 1 and 25", "INVALID_CAPACITY");
 
-            var category = await _uow.Categories.GetByIdAsync(model.CategoryId, ct);
+            var category = await uow.Categories.GetByIdAsync(model.CategoryId, ct);
             if (category is null)
                 return Result.Fail("Invalid category.", "CATEGORY_NOT_FOUND");
 
-            var trainer = await _uow.Trainers.GetByIdAsync(model.TrainerId, ct);
+            var trainer = await uow.Trainers.GetByIdAsync(model.TrainerId, ct);
             if (trainer is null)
                 return Result.Fail("Invalid trainer.", "TRAINER_NOT_FOUND");
 
             if (ValidateTrainerSpecialty(trainer, category).IsFailure)
                 return Result.Fail($"Trainer specialty '{trainer.Specialty}' does not match category '{category.Name}'. Only trainers with matching specialty can lead this session.", "SPECIALTY_MISMATCH");
 
-            if (await _uow.Sessions.HasTrainerConflictAsync(trainer.Id, start, end, null, ct))
+            if (await uow.Sessions.HasTrainerConflictAsync(trainer.Id, start, end, null, ct))
                 return Result.Fail("Trainer is not available during the selected time slot", "TRAINER_CONFLICT");
 
-            var session = new Session
-            {
-                StartDate = model.StartDate,
-                EndDate = model.EndDate,
-                Capacity = model.Capacity,
-                CategoryId = model.CategoryId,
-                Description = model.Description,
-                TrainerId = model.TrainerId
-            };
+            var session = mapper.Map<Session>(model);
 
-            await _uow.Sessions.AddAsync(session, ct);
-            await _uow.SaveChangesAsync(ct);
+            await uow.Sessions.AddAsync(session, ct);
+            await uow.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Session created successfully with ID: {Id}", session.Id);
+            logger.LogInformation("Session created successfully with ID: {Id}", session.Id);
             return Result.Ok();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating session");
+            logger.LogError(ex, "Error creating session");
             return Result.Fail("An unexpected error occurred", "INTERNAL_ERROR");
         }
     }
@@ -108,7 +88,7 @@ public class SessionService : ISessionService
     {
         try
         {
-            var session = await _uow.Sessions.GetByIdTrackingIncludingAsync(
+            var session = await uow.Sessions.GetByIdTrackingIncludingAsync(
                 id,
                 trackChanges: false,
                 includes: [s => s.Trainer!, s => s.Category!, s => s.Bookings],
@@ -116,28 +96,19 @@ public class SessionService : ISessionService
 
             if (session is null)
             {
-                _logger.LogWarning("Session not found with ID: {Id}", id);
+                logger.LogWarning("Session not found with ID: {Id}", id);
                 return Result.Fail<DetailsSessionDTO>("Session not found", nameof(id));
             }
 
-            var dto = new DetailsSessionDTO
-            {
-                Id = session.Id,
-                CategoryName = session.Category.Name,
-                Description = session.Description,
-                TrainerName = session.Trainer.Name,
-                StartDate = session.StartDate,
-                EndDate = session.EndDate,
-                AvailableSlots = session.Bookings.Count,
-                Capacity = session.Capacity,
-                Status = GetStatus(session.StartDate, session.EndDate, DateTime.Now)
-            };
+            var dto = mapper.Map<DetailsSessionDTO>(session);
+
+            dto.Status = GetStatus(session.StartDate, session.EndDate, DateTime.Now);
 
             return Result.Ok(dto);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting session details for ID: {Id}", id);
+            logger.LogError(ex, "Error getting session details for ID: {Id}", id);
             return Result.Fail<DetailsSessionDTO>("Failed to retrieve session details", "DATABASE_ERROR");
         }
     }
@@ -146,7 +117,7 @@ public class SessionService : ISessionService
     {
         try
         {
-            var session = await _uow.Sessions.GetByIdTrackingIncludingAsync(
+            var session = await uow.Sessions.GetByIdTrackingIncludingAsync(
                 id,
                 trackChanges: false,
                 includes: [s => s.Trainer!, s => s.Category!],
@@ -154,24 +125,17 @@ public class SessionService : ISessionService
 
             if (session is null)
             {
-                _logger.LogWarning("Session not found with ID: {Id}", id);
+                logger.LogWarning("Session not found with ID: {Id}", id);
                 return Result.Fail<EditSessionDTO>("Session not found", "SESSION_NOT_FOUND");
             }
 
-            var dto = new EditSessionDTO
-            {
-                Id = session.Id,
-                TrainerId = session.TrainerId,
-                Description = session.Description,
-                StartDate = session.StartDate,
-                EndDate = session.EndDate
-            };
+            var dto = mapper.Map<EditSessionDTO>(session);
 
             return Result.Ok(dto);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting session for edit, ID: {Id}", id);
+            logger.LogError(ex, "Error getting session for edit, ID: {Id}", id);
             return Result.Fail<EditSessionDTO>("Failed to retrieve session data", "DATABASE_ERROR");
         }
     }
@@ -180,7 +144,7 @@ public class SessionService : ISessionService
     {
         try
         {
-            var session = await _uow.Sessions.GetByIdTrackingIncludingAsync(
+            var session = await uow.Sessions.GetByIdTrackingIncludingAsync(
                 model.Id,
                 trackChanges: false,
                 includes: [s => s.Category!, s => s.Bookings],
@@ -202,30 +166,27 @@ public class SessionService : ISessionService
             if (model.StartDate <= currentTime)
                 return Result.Fail("Start date and time must be in the future", "PAST_START_DATE");
 
-            var trainer = await _uow.Trainers.GetByIdAsync(model.TrainerId, ct);
+            var trainer = await uow.Trainers.GetByIdAsync(model.TrainerId, ct);
             if (trainer is null)
                 return Result.Fail("Invalid trainer.", "TRAINER_NOT_FOUND");
 
             if (ValidateTrainerSpecialty(trainer, session.Category).IsFailure)
                 return Result.Fail($"Trainer specialty '{trainer.Specialty}' does not match category '{session.Category.Name}'", "SPECIALTY_MISMATCH");
 
-            if (await _uow.Sessions.HasTrainerConflictAsync(trainer.Id, model.StartDate, model.EndDate, model.Id, ct))
+            if (await uow.Sessions.HasTrainerConflictAsync(trainer.Id, model.StartDate, model.EndDate, model.Id, ct))
                 return Result.Fail("Trainer is not available during the selected time slot", "TRAINER_CONFLICT");
 
-            session.TrainerId = model.TrainerId;
-            session.Description = model.Description.Trim();
-            session.StartDate = model.StartDate;
-            session.EndDate = model.EndDate;
-            session.UpdatedAt = DateTime.Now;
+            mapper.Map(model, session);
 
-            _uow.Sessions.Update(session, ct);
-            await _uow.SaveChangesAsync(ct);
+            uow.Sessions.Update(session, ct);
+            await uow.SaveChangesAsync(ct);
 
+            logger.LogInformation("Session {Id} updated successfully", session.Id);
             return Result.Ok();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating session {Id}", model.Id);
+            logger.LogError(ex, "Error updating session {Id}", model.Id);
             return Result.Fail("Failed to update session", "UPDATE_ERROR");
         }
     }
@@ -234,39 +195,29 @@ public class SessionService : ISessionService
     {
         try
         {
-            var session = await _uow.Sessions.GetByIdTrackingIncludingAsync(
+            var session = await uow.Sessions.GetByIdTrackingIncludingAsync(
                 id,
                 trackChanges: false,
-                includes: [s => s.Trainer!, s => s.Category!, s => s.Bookings], 
+                includes: [s => s.Trainer!, s => s.Category!, s => s.Bookings],
                 ct);
 
             if (session is null)
             {
-                _logger.LogWarning("Session not found with ID: {Id}", id);
+                logger.LogWarning("Session not found with ID: {Id}", id);
                 return Result.Fail<DeleteSessionDTO>("Session not found", "SESSION_NOT_FOUND");
             }
 
-            var status = GetStatus(session.StartDate, session.EndDate, DateTime.Now);
+            var dto = mapper.Map<DeleteSessionDTO>(session);
 
-            var dto = new DeleteSessionDTO
-            {
-                Id = session.Id,
-                Specialty = session.Category.Name,
-                TrainerName = session.Trainer.Name,
-                Description = session.Description,
-                StartDate = session.StartDate,
-                EndDate = session.EndDate,
-                BookedCount = session.Bookings.Count,
-                MaxCapacity = session.Capacity,
-                Status = status.ToString(),
-                CanDelete = status == SessionStatus.Upcoming
-            };
+            var status = GetStatus(session.StartDate, session.EndDate, DateTime.Now);
+            dto.Status = status.ToString();
+            dto.CanDelete = status == SessionStatus.Upcoming;
 
             return Result.Ok(dto);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting session for delete, ID: {Id}", id);
+            logger.LogError(ex, "Error getting session for delete, ID: {Id}", id);
             return Result.Fail<DeleteSessionDTO>("Failed to retrieve session data", "DATABASE_ERROR");
         }
     }
@@ -275,7 +226,7 @@ public class SessionService : ISessionService
     {
         try
         {
-            var session = await _uow.Sessions.GetByIdTrackingIncludingAsync(
+            var session = await uow.Sessions.GetByIdTrackingIncludingAsync(
                 id,
                 trackChanges: false,
                 includes: [s => s.Trainer!, s => s.Category!, s => s.Bookings],
@@ -283,7 +234,7 @@ public class SessionService : ISessionService
 
             if (session is null)
             {
-                _logger.LogWarning("Session not found with ID: {Id}", id);
+                logger.LogWarning("Session not found with ID: {Id}", id);
                 return Result.Fail("Session not found", "SESSION_NOT_FOUND");
             }
 
@@ -295,17 +246,17 @@ public class SessionService : ISessionService
                 return Result.Fail("Only upcoming sessions can be deleted.", string.Empty);
 
             foreach (var booking in session.Bookings)
-                await _uow.Bookings.SoftDeleteAsync(booking, ct);
+                await uow.Bookings.SoftDeleteAsync(booking, ct);
 
-            await _uow.Sessions.SoftDeleteAsync(session, ct);
-            await _uow.Sessions.SaveChangesAsync(ct);
+            await uow.Sessions.SoftDeleteAsync(session, ct);
+            await uow.Sessions.SaveChangesAsync(ct);
 
-            _logger.LogInformation("SESSION {Id} deleted successfully", id);
+            logger.LogInformation("SESSION {Id} deleted successfully", id);
             return Result.Ok();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting session {Id}", id);
+            logger.LogError(ex, "Error deleting session {Id}", id);
             return Result.Fail("Failed to delete session", "DELETE_ERROR");
         }
     }
@@ -318,7 +269,7 @@ public class SessionService : ISessionService
         // Case-insensitive match
         if (!string.Equals(trainerSpecialty, categoryName, StringComparison.OrdinalIgnoreCase))
         {
-            _logger.LogWarning("Trainer specialty '{TrainerSpecialty}' does not match category '{CategoryName}'",
+            logger.LogWarning("Trainer specialty '{TrainerSpecialty}' does not match category '{CategoryName}'",
                 trainerSpecialty, categoryName);
             return Result.Fail($"Trainer specialty '{trainerSpecialty}' does not match category '{categoryName}'. Only trainers with matching specialty can lead this session.");
         }

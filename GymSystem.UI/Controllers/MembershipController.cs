@@ -47,7 +47,7 @@ public class MembershipController(
     public async Task<IActionResult> Create(CancellationToken ct = default)
     {
         var membersResult = await _memberService.GetAllAsync(ct);
-        var plansResult = await _planService.GetAllAsync(ct);
+        var plansResult = await _planService.GetActivePlansAsync(ct);
 
         ViewBag.Members = membersResult.IsSuccess
             ? new SelectList(membersResult.Value, "Id", "Name")
@@ -84,12 +84,7 @@ public class MembershipController(
             return RedirectToAction(nameof(Index));
         }
 
-        ErrorHandler.HandleError(result, ModelState);
-
-        if (result.ErrorKey == "ALREADY_ACTIVE")
-        {
-            TempData["Info"] = "You can view the active membership in the list below.";
-        }
+        this.HandleErrorResult(result, ModelState);
 
         await PopulateDropdowns(ct);
         return View(model);
@@ -122,7 +117,7 @@ public class MembershipController(
     private async Task PopulateDropdowns(CancellationToken ct)
     {
         var membersResult = await _memberService.GetAllAsync(ct);
-        var plansResult = await _planService.GetAllAsync(ct);
+        var plansResult = await _planService.GetActivePlansAsync(ct);
 
         ViewBag.Members = membersResult.IsSuccess
             ? new SelectList(membersResult.Value, "Id", "Name")
