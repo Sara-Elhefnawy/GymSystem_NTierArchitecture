@@ -6,5 +6,5 @@ public class IndexTrainerViewModel
     public string Name { get; set; } = default!;
     public string Email { get; set; } = default!;
     public string Phone { get; set; } = default!;
-    public string Specialties { get; set; } = default!;
+    public string Specialty { get; set; } = default!;
 }

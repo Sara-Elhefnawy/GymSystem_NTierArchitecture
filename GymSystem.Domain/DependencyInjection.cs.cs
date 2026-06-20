@@ -2,8 +2,9 @@
 using GymSystem.Domain.Abstractions.Services;
 using GymSystem.Domain.Abstractions.QrService;
 using GymSystem.Domain.Attachments;
-using GymSystem.Domain.Mappings;
 using GymSystem.Domain.QRCode;
+using Mapster;
+using MapsterMapper;
 using GymSystem.Domain.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,13 +29,11 @@ public static class DependencyInjection
         services.AddScoped<IQrService, QrService>();
         services.Configure<QrCodeSettings>(configuration.GetSection("QrCodeSettings"));
 
-        services.AddAutoMapper(cfg =>
-        {
-            cfg.AddProfile<MemberProfile>();
-            cfg.AddProfile<HealthRecordProfile>();
-        }, typeof(MemberProfile).Assembly);
+        var config = TypeAdapterConfig.GlobalSettings;
+        config.Scan(typeof(DependencyInjection).Assembly);
+        services.AddSingleton(config);
+        services.AddScoped<IMapper, ServiceMapper>();
 
         return services;
     }
-
 }

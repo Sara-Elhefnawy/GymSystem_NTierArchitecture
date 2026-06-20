@@ -28,7 +28,7 @@ public class TrainerController(ITrainerService trainers) : Controller
             Name = m.Name,
             Email = m.Email,
             Phone = m.Phone,
-            Specialties = m.Specialties
+            Specialty = m.Specialty
         }).ToList();
 
         return View(viewModels);

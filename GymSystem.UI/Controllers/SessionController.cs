@@ -366,7 +366,7 @@ public class SessionController(
                 return new SelectList(new List<SelectListItem>());
 
             var filteredTrainers = trainersResult.Value
-                .Where(t => t.Specialties == specialty)
+                .Where(t => t.Specialty == specialty)
                 .ToList();
 
             Console.WriteLine($"Found {filteredTrainers.Count} trainers for specialty {specialty}");

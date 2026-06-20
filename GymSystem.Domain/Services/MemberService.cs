@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using GymSystem.Domain.Abstractions.Attachments;
+﻿using GymSystem.Domain.Abstractions.Attachments;
 using GymSystem.Domain.Abstractions.QrService;
 using GymSystem.Domain.Abstractions.Services;
 using GymSystem.Domain.Abstractions.UnitOfWorks;
@@ -11,13 +10,13 @@ using GymSystem.Domain.Entities.Enums;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using GymSystem.Domain.Common;
+using Mapster;
 
 namespace GymSystem.Domain.Services;
 
 public class MemberService(
     IUnitOfWork uow,
     ILogger<MemberService> logger,
-    IMapper mapper,
     IAttachmentService attachmentService,
     IQrService qrService) : IMemberService
 {
@@ -26,7 +25,7 @@ public class MemberService(
         try
         {
             var members = await uow.Members.GetAllAsync(ct);
-            var dtos = mapper.Map<IReadOnlyList<IndexMemberDTO>>(members);
+            var dtos = members.Adapt<IReadOnlyList<IndexMemberDTO>>();
 
             return Result.Ok(dtos);
         }
@@ -45,7 +44,7 @@ public class MemberService(
 
             var members = await uow.Members.GetMembersWithActiveMembershipAsync(ct);
 
-            var dtos = mapper.Map<IReadOnlyList<IndexMemberDTO>>(members);
+            var dtos = members.Adapt<IReadOnlyList<IndexMemberDTO>>();
 
             logger.LogInformation("Retrieved {Count} members with active memberships", dtos.Count());
 
@@ -89,7 +88,13 @@ public class MemberService(
             if (!Enum.TryParse<BloodType>(model.HealthRecord.BloodType, true, out var bloodType))
                 return Result.Fail("Invalid blood type value", "INVALID_BLOOD_TYPE");
 
-            var member = mapper.Map<Member>(model);
+            var member = model.Adapt<Member>();
+            member.Address = new Address
+            {
+                BuildingNumber = model.BuildingNumber,
+                Street = model.Street,
+                City = model.City
+            };
 
             if (model.Photo is { Length: > 0 })
             {
@@ -184,7 +189,23 @@ public class MemberService(
                 return Result.Fail<DetailsMemberDTO>("Member not found", "MEMBER_NOT_FOUND");
             }
 
-            var dto = mapper.Map<DetailsMemberDTO>(member);
+            var dto = member.Adapt<DetailsMemberDTO>();
+            dto.Address = $"{member.Address.BuildingNumber} - {member.Address.Street} - {member.Address.City}";
+            var latestMembership = member.Memberships?
+                .OrderByDescending(m => m.StartDate)
+                .FirstOrDefault();
+            if (latestMembership != null)
+            {
+                dto.PlanName = latestMembership.Plan?.Name ?? "No Plan";
+                dto.MembershipStartDate = latestMembership.StartDate;
+                dto.MembershipEndDate = latestMembership.EndDate;
+            }
+            else
+            {
+                dto.PlanName = "No Plan";
+                dto.MembershipStartDate = null;
+                dto.MembershipEndDate = null;
+            }
 
             return Result.Ok(dto);
         }
@@ -213,7 +234,7 @@ public class MemberService(
                 return Result.Fail<DetailsHealthRecordDTO>("Health record not found", "HEALTH_RECORD_NOT_FOUND");
             }
 
-            var dto = mapper.Map<DetailsHealthRecordDTO>(member.HealthRecord);
+            var dto = member.HealthRecord.Adapt<DetailsHealthRecordDTO>();
 
             logger.LogInformation("Health record retrieved for member {Id}: BloodType={BloodType}, Weight={Weight}, Height={Height}",
                 id, dto.BloodType, dto.Weight, dto.Height);
@@ -238,7 +259,10 @@ public class MemberService(
                 return Result.Fail<EditMemberDTO>("Member not found", "MEMBER_NOT_FOUND");
             }
 
-            var dto = mapper.Map<EditMemberDTO>(member);
+            var dto = member.Adapt<EditMemberDTO>();
+            dto.BuildingNumber = member.Address.BuildingNumber;
+            dto.Street = member.Address.Street;
+            dto.City = member.Address.City;
 
             return Result.Ok(dto);
         }
@@ -276,7 +300,10 @@ public class MemberService(
                     return Result.Fail("Phone number is already taken", "PHONE_TAKEN");
             }
 
-            mapper.Map(dto, member);
+            TypeAdapter.Adapt(dto, member);
+            member.Address.BuildingNumber = dto.BuildingNumber;
+            member.Address.Street = dto.Street;
+            member.Address.City = dto.City;
 
             uow.Members.Update(member, ct);
             await uow.Members.SaveChangesAsync(ct);
@@ -303,7 +330,7 @@ public class MemberService(
                 return Result.Fail<DeleteMemberDTO>("Member not found", "MEMBER_NOT_FOUND");
             }
 
-            var dto = mapper.Map<DeleteMemberDTO>(member);
+            var dto = member.Adapt<DeleteMemberDTO>();
 
             return Result.Ok(dto);
         }

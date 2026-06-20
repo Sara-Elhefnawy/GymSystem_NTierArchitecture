@@ -60,7 +60,13 @@ public class CheckInController : Controller
             var checkInResult = result.Value;
 
             string message;
-            if (checkInResult.IsAlreadyAttended)
+            if (checkInResult.IsPreBooked)
+            {
+                message = checkInResult.AlreadyPreBooked
+                    ? $"{checkInResult.MemberName} is already booked for upcoming session: {checkInResult.SessionName}"
+                    : $"Pre-booked! {checkInResult.MemberName} successfully booked for upcoming session: {checkInResult.SessionName}";
+            }
+            else if (checkInResult.IsAlreadyAttended)
             {
                 message = $"Member {checkInResult.MemberName} already attended {checkInResult.SessionName} today";
             }

@@ -47,4 +47,12 @@ public class SessionRepository(GymAppDbContext dbContext) : Repository<Session>(
                 s.StartDate <= time &&
                 s.EndDate >= time,
                 ct);
+
+    public async Task<Session?> GetNextUpcomingSessionAsync(DateTime after, CancellationToken ct = default)
+    => await _dbSet
+        .Include(s => s.Category)
+        .Include(s => s.Bookings.Where(b => !b.IsDeleted))
+        .Where(s => !s.IsDeleted && s.StartDate > after)
+        .OrderBy(s => s.StartDate)
+        .FirstOrDefaultAsync(ct);
 }

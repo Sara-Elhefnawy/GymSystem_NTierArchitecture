@@ -7,4 +7,5 @@ public class EditPlanViewModel
     public string Description { get; set; } = default!;
     public int DurationDays { get; set; }
     public decimal Price { get; set; }
+    public bool IsActive { get; set; } = true;
 }

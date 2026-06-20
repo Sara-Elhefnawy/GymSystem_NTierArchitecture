@@ -6,4 +6,6 @@ public class ResultCheckInDTO
     public string SessionName { get; set; } = default!;
     public bool IsAlreadyAttended { get; set; }
     public bool WasAutoBooked { get; set; }
+    public bool IsPreBooked { get; set; }
+    public bool AlreadyPreBooked { get; set; }
 }

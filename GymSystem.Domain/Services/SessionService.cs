@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using GymSystem.Domain.Abstractions.QueryService;
+﻿using GymSystem.Domain.Abstractions.QueryService;
 using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Domain.DTOs.Session;
 using GymSystem.Domain.Abstractions.Services;
@@ -7,14 +6,14 @@ using GymSystem.Domain.DTOs.Session.Enums;
 using GymSystem.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using GymSystem.Domain.Common;
+using Mapster;
 
 namespace GymSystem.Domain.Services;
 
 public class SessionService(
     ISessionQueryService sessionQueryService,
     IUnitOfWork uow,
-    ILogger<SessionService> logger,
-    IMapper mapper) : ISessionService
+    ILogger<SessionService> logger) : ISessionService
 {
     public async Task<Result<IReadOnlyList<IndexSessionDTO>>> GetAllAsync(CancellationToken ct = default)
     {
@@ -22,7 +21,7 @@ public class SessionService(
         {
             var sessions = await sessionQueryService.GetIndexItemsAsync(ct);
 
-            var dtoList = mapper.Map<IReadOnlyList<IndexSessionDTO>>(sessions);
+            var dtoList = sessions.Adapt<IReadOnlyList<IndexSessionDTO>>();
 
             // Set the Status for each DTO (calculated)
             foreach (var dto in dtoList)
@@ -69,7 +68,7 @@ public class SessionService(
             if (await uow.Sessions.HasTrainerConflictAsync(trainer.Id, start, end, null, ct))
                 return Result.Fail("Trainer is not available during the selected time slot", "TRAINER_CONFLICT");
 
-            var session = mapper.Map<Session>(model);
+            var session = model.Adapt<Session>();
 
             await uow.Sessions.AddAsync(session, ct);
             await uow.SaveChangesAsync(ct);
@@ -102,7 +101,7 @@ public class SessionService(
 
             var activeBookings = await uow.Bookings.GetBookingsWithActiveMembershipForSessionAsync(id, ct);
 
-            var dto = mapper.Map<DetailsSessionDTO>(session);
+            var dto = session.Adapt<DetailsSessionDTO>();
 
             dto.AvailableSlots = session.Capacity - activeBookings.Count();
 
@@ -133,7 +132,7 @@ public class SessionService(
                 return Result.Fail<EditSessionDTO>("Session not found", "SESSION_NOT_FOUND");
             }
 
-            var dto = mapper.Map<EditSessionDTO>(session);
+            var dto = session.Adapt<EditSessionDTO>();
 
             return Result.Ok(dto);
         }
@@ -180,7 +179,7 @@ public class SessionService(
             if (await uow.Sessions.HasTrainerConflictAsync(trainer.Id, model.StartDate, model.EndDate, model.Id, ct))
                 return Result.Fail("Trainer is not available during the selected time slot", "TRAINER_CONFLICT");
 
-            mapper.Map(model, session);
+            TypeAdapter.Adapt(model, session);
 
             uow.Sessions.Update(session, ct);
             await uow.SaveChangesAsync(ct);
@@ -211,7 +210,7 @@ public class SessionService(
                 return Result.Fail<DeleteSessionDTO>("Session not found", "SESSION_NOT_FOUND");
             }
 
-            var dto = mapper.Map<DeleteSessionDTO>(session);
+            var dto = session.Adapt<DeleteSessionDTO>();
 
             var status = GetStatus(session.StartDate, session.EndDate, DateTime.Now);
             dto.Status = status.ToString();

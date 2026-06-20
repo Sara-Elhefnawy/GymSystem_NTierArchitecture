@@ -1,20 +1,19 @@
-﻿using AutoMapper;
-using GymSystem.Domain.Abstractions.QrService;
+﻿using GymSystem.Domain.Abstractions.QrService;
 using GymSystem.Domain.Abstractions.Services;
 using GymSystem.Domain.Abstractions.UnitOfWorks;
+using GymSystem.Domain.Common;
 using GymSystem.Domain.DTOs.Booking;
 using GymSystem.Domain.DTOs.CheckIn;
 using GymSystem.Domain.Entities;
+using Mapster;
 using Microsoft.Extensions.Logging;
-using GymSystem.Domain.Common;
 
 namespace GymSystem.Domain.Services;
 
 public class BookingService(
     IUnitOfWork uow,
     ILogger<BookingService> logger,
-    IQrService qrService,
-    IMapper mapper) : IBookingService
+    IQrService qrService) : IBookingService
 {
     public async Task<Result<IReadOnlyList<IndexBookingDTO>>> GetAvailableSessionsAsync(CancellationToken ct = default)
     {
@@ -24,7 +23,12 @@ public class BookingService(
 
             var sessions = await uow.Sessions.GetAllWithBookingsAsync(ct);
 
-            var viewModels = mapper.Map<IReadOnlyList<IndexBookingDTO>>(sessions);
+            logger.LogInformation("Sessions count from DB: {Count}", sessions.Count);
+            foreach (var s in sessions)
+                logger.LogInformation("Session {Id}: Start={Start}, End={End}, Deleted={Deleted}",
+                    s.Id, s.StartDate, s.EndDate, s.IsDeleted);
+
+            var viewModels = sessions.Adapt<IReadOnlyList<IndexBookingDTO>>();
 
             logger.LogInformation("Retrieved {Count} sessions", viewModels.Count());
 
@@ -45,7 +49,7 @@ public class BookingService(
 
             var bookings = await uow.Bookings.GetBookingsBySessionIdAsync(sessionId, ct);
 
-            var viewModels = mapper.Map<IReadOnlyList<SessionInBookingDTO>>(bookings);
+            var viewModels = bookings.Adapt<IReadOnlyList<SessionInBookingDTO>>();
 
             logger.LogInformation("Retrieved {Count} members for session {SessionId}", viewModels.Count(), sessionId);
 
@@ -114,7 +118,7 @@ public class BookingService(
                 return Result.Fail("Session is at full capacity", "SESSION_FULL");
             }
 
-            var booking = mapper.Map<Booking>(model);
+            var booking = model.Adapt<Booking>();
 
             await uow.Bookings.AddAsync(booking, ct);
             logger.LogInformation("Booking added to repository");
@@ -238,45 +242,58 @@ public class BookingService(
                 return Result.Fail<ResultCheckInDTO>("Member does not have an active membership", "NO_ACTIVE_MEMBERSHIP");
             }
 
-            // 3. Find the CURRENT active session
-            var now = DateTime.Now;
-            var currentSession = await uow.Sessions.GetActiveSessionAtTimeAsync(now, ct);
+            // 3. First try: find a currently active session (walk-in)
+            var currentSession = await uow.Sessions.GetActiveSessionAtTimeAsync(DateTime.Now, ct);
 
-            if (currentSession == null)
+            if (currentSession != null)
             {
-                return Result.Fail<ResultCheckInDTO>("No active session right now", "NO_ACTIVE_SESSION");
-            }
+                // --- WALK-IN FLOW (existing behavior) ---
+                var bookingCount = currentSession.Bookings?.Count(b => !b.IsDeleted) ?? 0;
+                var availableSlots = currentSession.Capacity - bookingCount;
 
-            // 4. Check capacity
-            var bookingCount = currentSession.Bookings?.Count(b => !b.IsDeleted) ?? 0;
-            var availableSlots = currentSession.Capacity - bookingCount;
+                if (availableSlots <= 0)
+                    return Result.Fail<ResultCheckInDTO>("Session is full. No available slots.", "SESSION_FULL");
 
-            logger.LogInformation("Session {SessionId} - Capacity: {Capacity}, Bookings: {Bookings}, Available: {Available}",
-                currentSession.Id, currentSession.Capacity, bookingCount, availableSlots);
+                var existingBooking = currentSession.Bookings?
+                    .FirstOrDefault(b => b.MemberId == memberId && !b.IsDeleted);
 
-            if (availableSlots <= 0)
-            {
-                return Result.Fail<ResultCheckInDTO>("Session is full. No available slots.", "SESSION_FULL");
-            }
-
-            // 5. Check if member already has a booking for this session
-            var existingBooking = currentSession.Bookings?.FirstOrDefault(b => b.MemberId == memberId && !b.IsDeleted);
-
-            if (existingBooking != null)
-            {
-                if (existingBooking.IsAttended)
+                if (existingBooking != null)
                 {
+                    if (existingBooking.IsAttended)
+                    {
+                        return Result.Ok(new ResultCheckInDTO
+                        {
+                            MemberName = member.Name,
+                            SessionName = currentSession.Category?.Name ?? "Session",
+                            IsAlreadyAttended = true,
+                            WasAutoBooked = false
+                        });
+                    }
+
+                    existingBooking.IsAttended = true;
+                    existingBooking.AttendanceMarkedAt = DateTime.Now;
+                    await uow.SaveChangesAsync(ct);
+
                     return Result.Ok(new ResultCheckInDTO
                     {
                         MemberName = member.Name,
                         SessionName = currentSession.Category?.Name ?? "Session",
-                        IsAlreadyAttended = true,
+                        IsAlreadyAttended = false,
                         WasAutoBooked = false
                     });
                 }
 
-                existingBooking.IsAttended = true;
-                existingBooking.AttendanceMarkedAt = DateTime.Now;
+                // Auto-book walk-in
+                var walkInBooking = new Booking
+                {
+                    MemberId = memberId,
+                    SessionId = currentSession.Id,
+                    BookingDate = DateTime.Now,
+                    IsAttended = true,
+                    AttendanceMarkedAt = DateTime.Now
+                };
+
+                await uow.Bookings.AddAsync(walkInBooking, ct);
                 await uow.SaveChangesAsync(ct);
 
                 return Result.Ok(new ResultCheckInDTO
@@ -284,39 +301,60 @@ public class BookingService(
                     MemberName = member.Name,
                     SessionName = currentSession.Category?.Name ?? "Session",
                     IsAlreadyAttended = false,
-                    WasAutoBooked = false
+                    WasAutoBooked = true
                 });
             }
 
-            // 6. No booking exists - AUTO-CREATE (Walk-in)
-            var newBooking = new Booking
+            // 4. No active session — try to pre-book the next upcoming session
+            var nextSession = await uow.Sessions.GetNextUpcomingSessionAsync(DateTime.Now, ct);
+
+            if (nextSession == null)
+                return Result.Fail<ResultCheckInDTO>("No active or upcoming sessions available", "NO_ACTIVE_SESSION");
+
+            // Check if member is already booked for the upcoming session
+            var alreadyBooked = await uow.Bookings.IsMemberAlreadyBookedAsync(memberId, nextSession.Id, ct);
+            if (alreadyBooked)
+            {
+                return Result.Ok(new ResultCheckInDTO
+                {
+                    MemberName = member.Name,
+                    SessionName = nextSession.Category?.Name ?? "Session",
+                    IsAlreadyAttended = false,
+                    WasAutoBooked = false,
+                    IsPreBooked = true,
+                    AlreadyPreBooked = true
+                });
+            }
+
+            // Check capacity
+            var nextBookingCount = nextSession.Bookings?.Count(b => !b.IsDeleted) ?? 0;
+            if (nextSession.Capacity - nextBookingCount <= 0)
+                return Result.Fail<ResultCheckInDTO>(
+                    $"Next session ({nextSession.Category?.Name}) is full", "SESSION_FULL");
+
+            // Pre-book the upcoming session
+            var preBooking = new Booking
             {
                 MemberId = memberId,
-                SessionId = currentSession.Id,
+                SessionId = nextSession.Id,
                 BookingDate = DateTime.Now,
-                IsAttended = true,
-                AttendanceMarkedAt = DateTime.Now
+                IsAttended = false
             };
 
-            await uow.Bookings.AddAsync(newBooking, ct);
+            await uow.Bookings.AddAsync(preBooking, ct);
             await uow.SaveChangesAsync(ct);
 
-            // Generate QR code for future use
-            try
-            {
-                await qrService.GenerateMemberQrPngAsync(memberId, ct);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to generate QR for walk-in booking");
-            }
+            logger.LogInformation("Pre-booked member {MemberId} for upcoming session {SessionId}",
+                memberId, nextSession.Id);
 
             return Result.Ok(new ResultCheckInDTO
             {
                 MemberName = member.Name,
-                SessionName = currentSession.Category?.Name ?? "Session",
+                SessionName = nextSession.Category?.Name ?? "Session",
                 IsAlreadyAttended = false,
-                WasAutoBooked = true
+                WasAutoBooked = false,
+                IsPreBooked = true,
+                AlreadyPreBooked = false
             });
         }
         catch (Exception ex)

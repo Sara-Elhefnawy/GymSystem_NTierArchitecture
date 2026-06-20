@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using GymSystem.Domain.Abstractions.Services;
+﻿using GymSystem.Domain.Abstractions.Services;
 using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Domain.DTOs.Trainer;
 using GymSystem.Domain.Entities;
@@ -7,13 +6,13 @@ using GymSystem.Domain.Entities.Enums;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using GymSystem.Domain.Common;
+using Mapster;
 
 namespace GymSystem.Domain.Services;
 
 public class TrainerService(
     IUnitOfWork uow,
-    ILogger<TrainerService> logger,
-    IMapper mapper) : ITrainerService
+    ILogger<TrainerService> logger) : ITrainerService
 {
     public async Task<Result<IReadOnlyList<IndexTrainerDTO>>> GetAllAsync(CancellationToken ct = default)
     {
@@ -21,7 +20,7 @@ public class TrainerService(
         {
             var trainers = await uow.Trainers.GetAllAsync(ct);
 
-            var dtoList = mapper.Map<IReadOnlyList<IndexTrainerDTO>>(trainers);
+            var dtoList = trainers.Adapt<IReadOnlyList<IndexTrainerDTO>>();
 
             return Result.Ok(dtoList);
         }
@@ -61,7 +60,13 @@ public class TrainerService(
             if (!Enum.TryParse<Specialty>(model.Specialties, true, out var speciality))
                 return Result.Fail("Invalid specialty value", "INVALID_SPECIALTY");
 
-            var trainer = mapper.Map<Trainer>(model);
+            var trainer = model.Adapt<Trainer>();
+            trainer.Address = new Address
+            {
+                BuildingNumber = model.BuildingNumber,
+                Street = model.Street,
+                City = model.City
+            };
 
             await uow.Trainers.AddAsync(trainer, ct);
             await uow.Trainers.SaveChangesAsync(ct);
@@ -88,7 +93,8 @@ public class TrainerService(
                 return Result.Fail<DetailsTrainerDTO>("Trainer not found", "TRAINER_NOT_FOUND");
             }
 
-            var dto = mapper.Map<DetailsTrainerDTO>(trainer);
+            var dto = trainer.Adapt<DetailsTrainerDTO>();
+            dto.Address = $"{trainer.Address.BuildingNumber} - {trainer.Address.Street} - {trainer.Address.City}";
 
             return Result.Ok(dto);
         }
@@ -111,7 +117,10 @@ public class TrainerService(
                 return Result.Fail<EditTrainerDTO>("Trainer not found", "TRAINER_NOT_FOUND");
             }
 
-            var dto = mapper.Map<EditTrainerDTO>(trainer);
+            var dto = trainer.Adapt<EditTrainerDTO>();
+            dto.BuildingNumber = trainer.Address.BuildingNumber;
+            dto.Street = trainer.Address.Street;
+            dto.City = trainer.Address.City;
 
             return Result.Ok(dto);
         }
@@ -150,7 +159,10 @@ public class TrainerService(
                     return Result.Fail("Phone number is already taken", "PHONE_TAKEN");
             }
 
-            mapper.Map(model, trainer);
+            TypeAdapter.Adapt(model, trainer);
+            trainer.Address.BuildingNumber = model.BuildingNumber;
+            trainer.Address.Street = model.Street;
+            trainer.Address.City = model.City;
 
             uow.Trainers.Update(trainer, ct);
             await uow.Trainers.SaveChangesAsync(ct);
@@ -177,7 +189,7 @@ public class TrainerService(
                 return Result.Fail<DeleteTrainerDTO>("Trainer not found", "TRAINER_NOT_FOUND");
             }
 
-            var dto = mapper.Map<DeleteTrainerDTO>(trainer);
+            var dto = trainer.Adapt<DeleteTrainerDTO>();
 
             return Result.Ok(dto);
         }

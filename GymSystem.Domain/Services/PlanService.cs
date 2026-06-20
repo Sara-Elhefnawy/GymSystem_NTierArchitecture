@@ -1,16 +1,15 @@
-﻿using AutoMapper;
-using GymSystem.Domain.Abstractions.Services;
+﻿using GymSystem.Domain.Abstractions.Services;
 using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Domain.Common;
 using GymSystem.Domain.DTOs.Plan;
+using Mapster;
 using Microsoft.Extensions.Logging;
 
 namespace GymSystem.Domain.Services;
 
 public class PlanService(
     IUnitOfWork uow,
-    ILogger<PlanService> logger,
-    IMapper mapper) : IPlanService
+    ILogger<PlanService> logger) : IPlanService
 {
     public async Task<Result<IReadOnlyList<IndexPlanDTO>>> GetActivePlansAsync(CancellationToken ct = default)
     {
@@ -18,7 +17,7 @@ public class PlanService(
         {
             var items = await uow.Plans.GetAllAsync(ct);
 
-            var dtos = mapper.Map<IReadOnlyList<IndexPlanDTO>>(items);
+            var dtos = items.Adapt<IReadOnlyList<IndexPlanDTO>>();
 
             return Result.Ok(dtos);
         }
@@ -41,7 +40,7 @@ public class PlanService(
                 return Result.Fail<DetailsPlanDTO>("Plan not found", "PLAN_NOT_FOUND");
             }
 
-            var dto = mapper.Map<DetailsPlanDTO>(plan);
+            var dto = plan.Adapt<DetailsPlanDTO>();
 
             return Result.Ok(dto);
         }
@@ -63,7 +62,7 @@ public class PlanService(
                 return Result.Fail<EditPlanDTO>("Plan not found", "PLAN_NOT_FOUND");
             }
 
-            var dto = mapper.Map<EditPlanDTO>(plan);
+            var dto = plan.Adapt<EditPlanDTO>();
 
             return Result.Ok(dto);
         }
@@ -96,7 +95,7 @@ public class PlanService(
                 }
             }
 
-            mapper.Map(dto, plan);
+            TypeAdapter.Adapt(dto, plan);
 
             uow.Plans.Update(plan, ct);
             await uow.SaveChangesAsync(ct);

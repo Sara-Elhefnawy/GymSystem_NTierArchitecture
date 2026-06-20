@@ -6,22 +6,13 @@ using Microsoft.Extensions.Logging;
 
 namespace GymSystem.Domain.Services;
 
-public class CategoryService : ICategoryService
+public class CategoryService(IUnitOfWork uow, ILogger<CategoryService> logger) : ICategoryService
 {
-    private readonly IUnitOfWork _uow;
-    private readonly ILogger<CategoryService> _logger;
-
-    public CategoryService(IUnitOfWork uow, ILogger<CategoryService> logger)
-    {
-        _uow = uow;
-        _logger = logger;
-    }
-
     public async Task<Result<IReadOnlyList<IndexCategoryDTO>>> GetAllAsync(CancellationToken ct = default)
     {
         try
         {
-            var items = await _uow.Categories.GetAllAsync(ct);
+            var items = await uow.Categories.GetAllAsync(ct);
 
             Console.WriteLine($"Found {items?.Count() ?? 0} categories");
 
@@ -42,7 +33,7 @@ public class CategoryService : ICategoryService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting all categories");
+            logger.LogError(ex, "Error getting all categories");
             return Result.Fail<IReadOnlyList<IndexCategoryDTO>>("Failed to retrieve categories", "DATABASE_ERROR");
         }
     }

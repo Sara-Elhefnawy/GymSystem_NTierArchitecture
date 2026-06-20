@@ -16,4 +16,6 @@ public interface ISessionRepository : IRepository<Session>
         DateTime end,
         int? excludeSessionId = null,
         CancellationToken ct = default);
+
+    Task<Session?> GetNextUpcomingSessionAsync(DateTime after, CancellationToken ct = default);
 }

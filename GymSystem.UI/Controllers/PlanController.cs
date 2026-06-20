@@ -75,7 +75,8 @@ public class PlanController(IPlanService plans) : Controller
             Id = id,
             Description = result.Value.Description,
             DurationDays = result.Value.DurationDays,
-            Price = result.Value.Price
+            Price = result.Value.Price,
+            IsActive = result.Value.IsActive
         };
 
         var planDetails = await plans.GetDetailsAsync(id, ct);
@@ -92,6 +93,9 @@ public class PlanController(IPlanService plans) : Controller
     [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> Edit([FromRoute] int id, EditPlanDTO model, CancellationToken ct)
     {
+
+        Console.WriteLine($"Edit POST received: Id={model.Id}, IsActive={model.IsActive}, Name={model.Name}, Price={model.Price}");
+
         if (id != model.Id)
             return NotFound();
 
@@ -99,7 +103,7 @@ public class PlanController(IPlanService plans) : Controller
 
         if (!ModelState.IsValid)
         {
-            var planDetailss = await plans.GetDetailsAsync(id);
+            var planDetailss = await plans.GetDetailsAsync(id, ct);
             if (planDetailss.IsSuccess)
             {
                 model.Name = planDetailss.Value.Name;
@@ -113,7 +117,8 @@ public class PlanController(IPlanService plans) : Controller
             Description = model.Description,
             DurationDays = model.DurationDays,
             Name = model.Name,
-            Price = model.Price
+            Price = model.Price,
+            IsActive = model.IsActive
         };
 
         var result = await plans.UpdateAsync(dto, ct);

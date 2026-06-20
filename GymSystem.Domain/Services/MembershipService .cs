@@ -1,19 +1,18 @@
-﻿using AutoMapper;
-using GymSystem.Domain.Abstractions.QrService;
+﻿using GymSystem.Domain.Abstractions.QrService;
 using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Domain.DTOs.Membership;
 using GymSystem.Domain.Entities;
 using GymSystem.Domain.Abstractions.Services;
 using Microsoft.Extensions.Logging;
 using GymSystem.Domain.Common;
+using Mapster;
 
 namespace GymSystem.Domain.Services;
 
 public class MembershipService(
     IUnitOfWork uow,
     IQrService qrService,
-    ILogger<MembershipService> logger,
-    IMapper mapper) : IMembershipService
+    ILogger<MembershipService> logger) : IMembershipService
 {
     public async Task<Result<IEnumerable<IndexMembershipDTO>>> GetActiveMembershipsAsync(CancellationToken ct = default)
     {
@@ -21,7 +20,7 @@ public class MembershipService(
         {
             var memberships = await uow.Memberships.GetActiveMembershipsAsync(ct);
 
-            var dtos = mapper.Map<IEnumerable<IndexMembershipDTO>>(memberships);
+            var dtos = memberships.Adapt<IEnumerable<IndexMembershipDTO>>();
 
             return Result.Ok(dtos);
         }
@@ -68,7 +67,7 @@ public class MembershipService(
                 return Result.Fail("Member already has an active membership", "ALREADY_ACTIVE");
             }
 
-            var membership = mapper.Map<Membership>(model);
+            var membership = model.Adapt<Membership>();
 
             membership.EndDate = DateOnly.FromDateTime(DateTime.Now.AddDays(plan.DurationDays));
 
