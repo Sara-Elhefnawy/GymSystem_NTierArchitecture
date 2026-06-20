@@ -1,6 +1,6 @@
-﻿using GymSystem.Infrastructure.Data;
-using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.Repositories.Interfaces;
+﻿using GymSystem.Domain.Abstractions.Repositories;
+using GymSystem.Infrastructure.Data;
+using GymSystem.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymSystem.Infrastructure.Repositories;
@@ -30,7 +30,8 @@ public class BookingRepository(GymAppDbContext dbContext) : Repository<Booking>(
         if (booking == null)
             return false;
 
-        dbContext.Bookings.Remove(booking);
+        booking.IsDeleted = true;
+        booking.DeletedAt = DateTime.UtcNow;
         await dbContext.SaveChangesAsync(ct);
         return true;
     }
@@ -49,16 +50,25 @@ public class BookingRepository(GymAppDbContext dbContext) : Repository<Booking>(
     }
 
     public async Task<IEnumerable<Booking>> GetUpcomingBookingsByMemberIdAsync(int memberId, CancellationToken ct = default)
-    {
-        var now = DateTime.Now;
-        return await dbContext.Bookings
+        => await dbContext.Bookings
             .Include(b => b.Session)
             .Include(b => b.Member)
             .Where(b => b.MemberId == memberId
                 && !b.IsDeleted
                 && !b.IsAttended
-                && b.Session.StartDate >= now)
+                && b.Session.StartDate >= DateTime.Now)
             .OrderBy(b => b.Session.StartDate)
             .ToListAsync(ct);
-    }
+
+    public async Task<IEnumerable<Booking>> GetBookingsWithActiveMembershipForSessionAsync(int sessionId, CancellationToken ct = default)
+        => await dbContext.Bookings
+            .Include(b => b.Member)
+                .ThenInclude(m => m.Memberships.Where(mem => !mem.IsDeleted && mem.EndDate >= DateOnly.FromDateTime(DateTime.Now)))
+            .Include(b => b.Session)
+            .Where(b => b.SessionId == sessionId
+                && !b.IsDeleted
+                && b.Member != null
+                && b.Member.Memberships.Any(mem => !mem.IsDeleted && mem.EndDate >= DateOnly.FromDateTime(DateTime.Now)))
+            .OrderBy(b => b.Member.Name)
+            .ToListAsync(ct);
 }

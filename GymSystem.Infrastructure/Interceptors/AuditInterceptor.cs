@@ -1,4 +1,4 @@
-﻿using GymSystem.Infrastructure.Entities;
+﻿using GymSystem.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 

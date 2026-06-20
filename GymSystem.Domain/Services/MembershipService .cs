@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
+using GymSystem.Domain.Abstractions.QrService;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Domain.DTOs.Membership;
-using GymSystem.Domain.QRCode;
-using GymSystem.Domain.Services.Interfaces;
-using GymSystem.Infrastructure.Attachments;
-using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.UnitOfWorks;
-using GymSystem.Shared.Common;
+using GymSystem.Domain.Entities;
+using GymSystem.Domain.Abstractions.Services;
 using Microsoft.Extensions.Logging;
+using GymSystem.Domain.Common;
 
 namespace GymSystem.Domain.Services;
 
@@ -152,6 +151,17 @@ public class MembershipService(
             {
                 logger.LogWarning($"Membership with ID {membershipId} is already deleted");
                 return Result.Fail("ALREADY_CANCELLED", "Membership is already cancelled");
+            }
+
+            // Cancel all upcoming bookings for this member
+            var upcomingBookings = await uow.Bookings.GetUpcomingBookingsByMemberIdAsync(membership.MemberId, ct);
+            if (upcomingBookings != null && upcomingBookings.Any())
+            {
+                foreach (var booking in upcomingBookings)
+                {
+                    await uow.Bookings.CancelBookingAsync(booking.MemberId, booking.SessionId, ct);
+                }
+                logger.LogInformation($"Cancelled {upcomingBookings.Count()} upcoming bookings for member {membership.MemberId}");
             }
 
             var result = await uow.Memberships.CancelMembershipByIdAsync(membershipId, ct);

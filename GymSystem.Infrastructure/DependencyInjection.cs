@@ -1,10 +1,13 @@
-﻿using GymSystem.Infrastructure.Data;
+﻿using GymSystem.Domain.Abstractions.Anonymization;
+using GymSystem.Domain.Abstractions.QueryService;
+using GymSystem.Domain.Abstractions.Repositories;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
+using GymSystem.Infrastructure.Anonymization;
+using GymSystem.Infrastructure.Data;
 using GymSystem.Infrastructure.Interceptor;
 using GymSystem.Infrastructure.QueryService;
 using GymSystem.Infrastructure.Repositories;
-using GymSystem.Infrastructure.Repositories.Interfaces;
 using GymSystem.Infrastructure.Seeders;
-using GymSystem.Infrastructure.Services;
 using GymSystem.Infrastructure.UnitOfWorks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

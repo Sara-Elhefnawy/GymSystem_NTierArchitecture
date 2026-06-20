@@ -1,9 +1,10 @@
-﻿using GymSystem.Domain.Attachments;
+﻿using GymSystem.Domain.Abstractions.Attachments;
+using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.Abstractions.QrService;
+using GymSystem.Domain.Attachments;
 using GymSystem.Domain.Mappings;
 using GymSystem.Domain.QRCode;
 using GymSystem.Domain.Services;
-using GymSystem.Domain.Services.Interfaces;
-using GymSystem.Infrastructure.Attachments;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

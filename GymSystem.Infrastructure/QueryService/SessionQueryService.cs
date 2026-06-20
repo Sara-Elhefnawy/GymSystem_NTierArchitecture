@@ -1,4 +1,6 @@
-﻿using GymSystem.Infrastructure.Data;
+﻿using GymSystem.Domain.Abstractions.QueryService;
+using GymSystem.Domain.QueryService;
+using GymSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymSystem.Infrastructure.QueryService;

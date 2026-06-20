@@ -1,5 +1,5 @@
-﻿using GymSystem.Domain.DTOs.Plan;
-using GymSystem.Domain.Services.Interfaces;
+﻿using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.DTOs.Plan;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Plan;
 using Microsoft.AspNetCore.Authorization;

@@ -1,5 +1,5 @@
-﻿using GymSystem.Infrastructure.Attachments;
-using GymSystem.Shared.Common;
+﻿using GymSystem.Domain.Abstractions.Attachments;
+using GymSystem.Domain.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

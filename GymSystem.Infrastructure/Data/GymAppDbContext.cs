@@ -1,4 +1,4 @@
-﻿using GymSystem.Infrastructure.Entities;
+﻿using GymSystem.Domain.Entities;
 using GymSystem.Infrastructure.Identities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;

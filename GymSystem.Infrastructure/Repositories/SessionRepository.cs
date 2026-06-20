@@ -1,6 +1,6 @@
-﻿using GymSystem.Infrastructure.Data;
-using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.Repositories.Interfaces;
+﻿using GymSystem.Domain.Abstractions.Repositories;
+using GymSystem.Infrastructure.Data;
+using GymSystem.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymSystem.Infrastructure.Repositories;
@@ -26,23 +26,6 @@ public class SessionRepository(GymAppDbContext dbContext) : Repository<Session>(
         => await _dbSet
             .AnyAsync(s => s.TrainerId == trainerId && s.EndDate >= now, ct);
 
-    public async Task<IEnumerable<Session>> GetSessionsForDateAsync(DateTime date, CancellationToken ct = default)
-    {
-        var startOfDay = date.Date;
-        var endOfDay = date.Date.AddDays(1);
-
-        return await _dbSet
-            .Include(s => s.Category)
-            .Include(s => s.Trainer)
-            .Include(s => s.Bookings.Where(b => !b.IsDeleted))
-            .Where(s =>
-                !s.IsDeleted &&
-                s.StartDate >= startOfDay &&
-                s.StartDate < endOfDay)
-            .OrderBy(s => s.StartDate)
-            .ToListAsync(ct);
-    }
-
     public async Task<bool> HasTrainerConflictAsync(
             int trainerId, 
             DateTime start, 
@@ -56,8 +39,7 @@ public class SessionRepository(GymAppDbContext dbContext) : Repository<Session>(
                 && s.EndDate > start, ct);
 
     public async Task<Session?> GetActiveSessionAtTimeAsync(DateTime time, CancellationToken ct = default)
-    {
-        return await _dbSet
+        => await _dbSet
             .Include(s => s.Category)
             .Include(s => s.Bookings.Where(b => !b.IsDeleted))
             .FirstOrDefaultAsync(s =>
@@ -65,5 +47,4 @@ public class SessionRepository(GymAppDbContext dbContext) : Repository<Session>(
                 s.StartDate <= time &&
                 s.EndDate >= time,
                 ct);
-    }
 }

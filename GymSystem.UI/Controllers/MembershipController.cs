@@ -1,8 +1,7 @@
-﻿using GymSystem.Domain.DTOs.Membership;
-using GymSystem.Domain.Services.Interfaces;
+﻿using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.DTOs.Membership;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Memberships;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 

@@ -1,6 +1,7 @@
-﻿using GymSystem.Infrastructure.Attachments;
-using GymSystem.Infrastructure.UnitOfWorks;
-using GymSystem.Shared.Common;
+﻿using GymSystem.Domain.Abstractions.Attachments;
+using GymSystem.Domain.Abstractions.QrService;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
+using GymSystem.Domain.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using QRCoder;

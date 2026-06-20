@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
+using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Domain.DTOs.Trainer;
-using GymSystem.Domain.Services.Interfaces;
-using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.Entities.Enums;
-using GymSystem.Infrastructure.UnitOfWorks;
-using GymSystem.Shared.Common;
+using GymSystem.Domain.Entities;
+using GymSystem.Domain.Entities.Enums;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using GymSystem.Domain.Common;
 
 namespace GymSystem.Domain.Services;
 
@@ -21,7 +21,6 @@ public class TrainerService(
         {
             var trainers = await uow.Trainers.GetAllAsync(ct);
 
-            // ✅ Use AutoMapper
             var dtoList = mapper.Map<IReadOnlyList<IndexTrainerDTO>>(trainers);
 
             return Result.Ok(dtoList);

@@ -1,0 +1,16 @@
+﻿namespace GymSystem.Domain.Entities;
+
+public class Member : GymUser
+{
+    public string? Photo { get; set; }   // Required at registration
+
+    public DateOnly JoinDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
+
+    // Cannot delete a member who has active bookings
+
+    public HealthRecord? HealthRecord { get; set; }   // Health record is required at registration
+
+    public ICollection<Membership> Memberships { get; set; } = [];
+
+    public ICollection<Booking> Bookings { get; set; } = [];
+}

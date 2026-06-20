@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using GymSystem.Domain.DTOs.Plan;
-using GymSystem.Infrastructure.Entities;
+using GymSystem.Domain.Entities;
 
 namespace GymSystem.Domain.Mappings;
 

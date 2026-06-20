@@ -1,5 +1,5 @@
-﻿using GymSystem.Domain.QRCode;
-using GymSystem.Domain.Services.Interfaces;
+﻿using GymSystem.Domain.Abstractions.QrService;
+using GymSystem.Domain.Abstractions.Services;
 using GymSystem.UI.Helpers;
 using Microsoft.AspNetCore.Mvc;
 

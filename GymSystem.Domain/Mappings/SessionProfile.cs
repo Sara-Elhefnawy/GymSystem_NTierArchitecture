@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
 using GymSystem.Domain.DTOs.Session;
-using GymSystem.Domain.DTOs.Session.Enums;
-using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.QueryService;
+using GymSystem.Domain.Entities;
+using GymSystem.Domain.QueryService;
 
 namespace GymSystem.Domain.Mappings;
 

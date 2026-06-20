@@ -15,5 +15,5 @@ public class CreateHealthRecordDTO
     public string BloodType { get; set; } = default!;
 
     [MaxLength(500)] 
-    public string? Note { get; set; }
+    public string? Notes { get; set; }
 }

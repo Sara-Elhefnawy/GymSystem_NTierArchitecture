@@ -1,6 +1,6 @@
-﻿using GymSystem.Domain.DTOs.Trainer;
-using GymSystem.Domain.Services.Interfaces;
-using GymSystem.Infrastructure.Entities.Enums;
+﻿using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.DTOs.Trainer;
+using GymSystem.Domain.Entities.Enums;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Trainer;
 using Microsoft.AspNetCore.Mvc;
@@ -129,20 +129,13 @@ public class TrainerController(ITrainerService trainers) : Controller
             viewModel.Name = trainersDetails.Value.Name;
         }
 
-        ViewBag.Specialties = Enum.GetValues(typeof(Specialty))
-            .Cast<Specialty>()
-            .Select(e => new SelectListItem
-            {
-                Value = e.ToString(),
-                Text = e.ToString(),
-                Selected = e.ToString() == viewModel.Specialty
-            }).ToList();
+        PopulateSpecialtiesDropdown(viewModel.Specialty);
 
         return View(viewModel);
     }
 
     [HttpPost("Edit/{id:int}")]
-    [ValidateAntiForgeryToken]  // Restore this
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit([FromRoute] int id, EditTrainerViewModel model, CancellationToken ct)
     {
         if (id != model.Id)
@@ -157,6 +150,7 @@ public class TrainerController(ITrainerService trainers) : Controller
             {
                 model.Name = trainerDetailss.Value.Name;
             }
+            PopulateSpecialtiesDropdown(model.Specialty);
             return View(model);
         }
 
@@ -182,13 +176,21 @@ public class TrainerController(ITrainerService trainers) : Controller
         // Use the error handler
         this.HandleErrorResult(result, ModelState);
 
-        var trainerDetails = await trainers.GetDetailsAsync(id, ct);
-        if (trainerDetails.IsSuccess)
-        {
-            model.Name = trainerDetails.Value.Name;
-        }
-
+        PopulateSpecialtiesDropdown(model.Specialty);
+        
         return View(model);
+    }
+
+    private void PopulateSpecialtiesDropdown(string selectedSpecialty = null)
+    {
+        ViewBag.Specialties = Enum.GetValues(typeof(Specialty))
+        .Cast<Specialty>()
+        .Select(e => new SelectListItem
+        {
+            Value = e.ToString(),
+            Text = e.ToString(),
+            Selected = e.ToString() == selectedSpecialty
+        }).ToList();
     }
 
     [HttpGet("Delete/{id:int}")]

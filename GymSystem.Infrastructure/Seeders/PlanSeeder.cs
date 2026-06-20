@@ -1,5 +1,5 @@
 ﻿using GymSystem.Infrastructure.Data;
-using GymSystem.Infrastructure.Entities;
+using GymSystem.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymSystem.Infrastructure.Seeders;

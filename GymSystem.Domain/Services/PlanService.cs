@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
+using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
+using GymSystem.Domain.Common;
 using GymSystem.Domain.DTOs.Plan;
-using GymSystem.Domain.Services.Interfaces;
-using GymSystem.Infrastructure.UnitOfWorks;
-using GymSystem.Shared.Common;
 using Microsoft.Extensions.Logging;
 
 namespace GymSystem.Domain.Services;

@@ -1,7 +1,7 @@
-﻿using GymSystem.Domain.DTOs.HealthRecord;
+﻿using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.Abstractions.QrService;
+using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
-using GymSystem.Domain.QRCode;
-using GymSystem.Domain.Services.Interfaces;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Member;
 using Microsoft.AspNetCore.Authorization;
@@ -71,7 +71,7 @@ public class MemberController(IMemberService members, ISessionService sessions, 
                 BloodType = model.HealthRecord.BloodType,
                 Height = model.HealthRecord.Height,
                 Weight = model.HealthRecord.Weight,
-                Note = model.HealthRecord.Note
+                Notes = model.HealthRecord.Note
             },
             Photo = model.Photo
         };

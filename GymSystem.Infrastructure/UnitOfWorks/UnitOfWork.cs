@@ -1,6 +1,7 @@
-﻿using GymSystem.Infrastructure.Data;
+﻿using GymSystem.Domain.Abstractions.Repositories;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
+using GymSystem.Infrastructure.Data;
 using GymSystem.Infrastructure.Repositories;
-using GymSystem.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace GymSystem.Infrastructure.UnitOfWorks;
@@ -8,7 +9,6 @@ namespace GymSystem.Infrastructure.UnitOfWorks;
 public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly GymAppDbContext _dbContext;
-    private IDbContextTransaction? _transaction;
 
     private IMemberRepository? _members;
     private IPlanRepository? _plans;

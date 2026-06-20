@@ -1,16 +1,16 @@
 ﻿using AutoMapper;
+using GymSystem.Domain.Abstractions.Attachments;
+using GymSystem.Domain.Abstractions.QrService;
+using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Domain.Attachments;
 using GymSystem.Domain.DTOs.HealthRecord;
 using GymSystem.Domain.DTOs.Member;
-using GymSystem.Domain.QRCode;
-using GymSystem.Domain.Services.Interfaces;
-using GymSystem.Infrastructure.Attachments;
-using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.Entities.Enums;
-using GymSystem.Infrastructure.UnitOfWorks;
-using GymSystem.Shared.Common;
+using GymSystem.Domain.Entities;
+using GymSystem.Domain.Entities.Enums;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using GymSystem.Domain.Common;
 
 namespace GymSystem.Domain.Services;
 

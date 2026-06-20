@@ -1,4 +1,4 @@
-using GymSystem.Domain.Services.Interfaces;
+using GymSystem.Domain.Abstractions.Services;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels;
 using GymSystem.UI.ViewModels.Home;

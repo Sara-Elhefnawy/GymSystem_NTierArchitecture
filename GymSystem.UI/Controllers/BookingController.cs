@@ -1,5 +1,5 @@
-﻿using GymSystem.Domain.DTOs.Booking;
-using GymSystem.Domain.Services.Interfaces;
+﻿using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.DTOs.Booking;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Booking;
 using Microsoft.AspNetCore.Authorization;

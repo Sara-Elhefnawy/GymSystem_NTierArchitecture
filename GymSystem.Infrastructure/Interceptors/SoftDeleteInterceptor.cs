@@ -1,4 +1,4 @@
-﻿using GymSystem.Infrastructure.Services;
+﻿using GymSystem.Domain.Abstractions.Anonymization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 

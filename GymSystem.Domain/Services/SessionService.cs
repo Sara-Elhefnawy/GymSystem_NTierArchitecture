@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
+using GymSystem.Domain.Abstractions.QueryService;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Domain.DTOs.Session;
+using GymSystem.Domain.Abstractions.Services;
 using GymSystem.Domain.DTOs.Session.Enums;
-using GymSystem.Domain.Services.Interfaces;
-using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.QueryService;
-using GymSystem.Infrastructure.UnitOfWorks;
-using GymSystem.Shared.Common;
+using GymSystem.Domain.Entities;
 using Microsoft.Extensions.Logging;
+using GymSystem.Domain.Common;
 
 namespace GymSystem.Domain.Services;
 
@@ -100,7 +100,11 @@ public class SessionService(
                 return Result.Fail<DetailsSessionDTO>("Session not found", nameof(id));
             }
 
+            var activeBookings = await uow.Bookings.GetBookingsWithActiveMembershipForSessionAsync(id, ct);
+
             var dto = mapper.Map<DetailsSessionDTO>(session);
+
+            dto.AvailableSlots = session.Capacity - activeBookings.Count();
 
             dto.Status = GetStatus(session.StartDate, session.EndDate, DateTime.Now);
 

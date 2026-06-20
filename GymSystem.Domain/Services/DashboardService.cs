@@ -1,8 +1,8 @@
-﻿using GymSystem.Domain.DTOs.Home;
-using GymSystem.Domain.Services.Interfaces;
-using GymSystem.Infrastructure.UnitOfWorks;
-using GymSystem.Shared.Common;
+﻿using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
+using GymSystem.Domain.DTOs.Home;
 using Microsoft.Extensions.Logging;
+using GymSystem.Domain.Common;
 
 namespace GymSystem.Domain.Services;
 

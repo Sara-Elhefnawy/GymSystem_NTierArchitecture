@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using GymSystem.Domain.DTOs.Booking;
 using GymSystem.Domain.DTOs.CheckIn;
-using GymSystem.Infrastructure.Entities;
+using GymSystem.Domain.Entities;
 
 namespace GymSystem.Domain.Mappings;
 

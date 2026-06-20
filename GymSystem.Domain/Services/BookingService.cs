@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
+using GymSystem.Domain.Abstractions.QrService;
+using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Domain.DTOs.Booking;
 using GymSystem.Domain.DTOs.CheckIn;
-using GymSystem.Domain.QRCode;
-using GymSystem.Domain.Services.Interfaces;
-using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.UnitOfWorks;
-using GymSystem.Shared.Common;
+using GymSystem.Domain.Entities;
 using Microsoft.Extensions.Logging;
+using GymSystem.Domain.Common;
 
 namespace GymSystem.Domain.Services;
 

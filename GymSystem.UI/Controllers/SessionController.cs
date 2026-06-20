@@ -1,5 +1,5 @@
-﻿using GymSystem.Domain.DTOs.Session;
-using GymSystem.Domain.Services.Interfaces;
+﻿using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.DTOs.Session;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Session;
 using Microsoft.AspNetCore.Mvc;
@@ -350,8 +350,8 @@ public class SessionController(
                 "CrossFit" => "CrossFit",
                 "Boxing" => "Boxing",
                 "Bodybuilding" => "Bodybuilding",
-                "GeneralFitness" => "GeneralFitness",
-                "PersonalTraining" => "PersonalTraining",
+                "General Fitness" => "GeneralFitness",
+                "Personal Training" => "PersonalTraining",
                 _ => ""
             };
 

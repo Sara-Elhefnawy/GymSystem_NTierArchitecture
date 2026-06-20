@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using GymSystem.Domain.DTOs.Trainer;
-using GymSystem.Infrastructure.Entities;
-using GymSystem.Infrastructure.Entities.Enums;
+using GymSystem.Domain.Entities;
+using GymSystem.Domain.Entities.Enums;
 
 namespace GymSystem.Domain.Mappings;
 

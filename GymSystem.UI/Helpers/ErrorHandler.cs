@@ -1,4 +1,4 @@
-﻿using GymSystem.Shared.Common;
+﻿using GymSystem.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
