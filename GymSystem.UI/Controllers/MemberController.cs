@@ -1,9 +1,9 @@
-﻿using GymSystem.Domain.Abstractions.Services;
-using GymSystem.Domain.Abstractions.QrService;
-using GymSystem.Domain.DTOs.HealthRecord;
+﻿using GymSystem.Domain.Abstractions.QrService;
+using GymSystem.Domain.Abstractions.Services;
 using GymSystem.Domain.DTOs.Member;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Member;
+using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +11,7 @@ namespace GymSystem.UI.Controllers;
 
 [Route("Member")]
 [Authorize(Roles = "SuperAdmin")]
-public class MemberController(IMemberService members, ISessionService sessions, IQrService qrService) : Controller
+public class MemberController(IMemberService members, IQrService qrService) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken ct = default)
@@ -24,15 +24,7 @@ public class MemberController(IMemberService members, ISessionService sessions, 
             return View(new List<IndexMemberViewModel>());
         }
 
-        var viewModels = result.Value.Select(m => new IndexMemberViewModel
-        {
-            Id = m.Id,
-            Name = m.Name,
-            Email = m.Email,
-            Phone = m.Phone,
-            Photo = m.Photo,
-            Gender = m.Gender
-        }).ToList();
+        var viewModels = result.Value.Adapt<IReadOnlyList<IndexMemberViewModel>>();
 
         return View(viewModels);
     }
@@ -56,25 +48,8 @@ public class MemberController(IMemberService members, ISessionService sessions, 
             return View(model);
         }
 
-        var dto = new CreateMemberDTO
-        {
-            Name = model.Name,
-            Email = model.Email,
-            Phone = model.Phone,
-            DateOfBirth = model.DateOfBirth,
-            Gender = model.Gender,
-            BuildingNumber = model.BuildingNumber,
-            City = model.City,
-            Street = model.Street,
-            HealthRecord = new CreateHealthRecordDTO
-            {
-                BloodType = model.HealthRecord.BloodType,
-                Height = model.HealthRecord.Height,
-                Weight = model.HealthRecord.Weight,
-                Notes = model.HealthRecord.Note
-            },
-            Photo = model.Photo
-        };
+        var dto = model.Adapt<CreateMemberDTO>();
+        //dto.HealthRecord.Notes = model.HealthRecord.Note ?? string.Empty;
 
         var result = await members.CreateAsync(dto, ct);
 
@@ -139,31 +114,12 @@ public class MemberController(IMemberService members, ISessionService sessions, 
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = new DetailsMemberViewModel
-        {
-            Id = result.Value.Id,
-            Name = result.Value.Name,
-            Email = result.Value.Email,
-            Phone = result.Value.Phone,
-            Photo = result.Value.Photo,
-            Gender = result.Value.Gender,
-            DateOfBirth = result.Value.DateOfBirth,
-            MembershipEndDate = result.Value.MembershipEndDate,
-            MembershipStartDate = result.Value.MembershipStartDate,
-            PlanName = result.Value.PlanName,
-            Address = result.Value.Address
-        };
+        var viewModel = result.Value.Adapt<DetailsMemberViewModel>();
 
         var healthRecord = await members.GetHealthRecordAsync(id, ct);
         if (healthRecord.IsSuccess)
         {
-            viewModel.HealthRecord = new DetailsHealthRecordViewModel
-            {
-                BloodType = healthRecord.Value.BloodType,
-                Height = healthRecord.Value.Height,
-                Weight = healthRecord.Value.Weight,
-                Notes = healthRecord.Value.Notes
-            };
+            viewModel.HealthRecord = healthRecord.Value.Adapt<DetailsHealthRecordViewModel>();
         }
 
         return View(viewModel);
@@ -180,15 +136,7 @@ public class MemberController(IMemberService members, ISessionService sessions, 
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = new EditMemberViewModel
-        {
-            Id = id,
-            Email = result.Value.Email,
-            Phone = result.Value.Phone,
-            BuildingNumber = result.Value.BuildingNumber,
-            City = result.Value.City,
-            Street = result.Value.Street
-        };
+        var viewModel = result.Value.Adapt<EditMemberViewModel>();
 
         var memberDetails = await members.GetDetailsAsync(id, ct);
         if (memberDetails.IsSuccess)
@@ -221,15 +169,7 @@ public class MemberController(IMemberService members, ISessionService sessions, 
             return View(model);
         }
 
-        var dto = new EditMemberDTO
-        {
-            Id = id,
-            Email = model.Email,
-            Phone = model.Phone,
-            BuildingNumber = model.BuildingNumber,
-            City = model.City,
-            Street = model.Street
-        };
+        var dto = model.Adapt<EditMemberDTO>();
 
         var result = await members.UpdateAsync(dto, ct);
 
@@ -263,12 +203,7 @@ public class MemberController(IMemberService members, ISessionService sessions, 
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = new DeleteMemberViewModel
-        {
-            Id = id,
-            Name = result.Value.Name,
-            Photo = result.Value.Photo
-        };
+        var viewModel = result.Value.Adapt<DeleteMemberViewModel>();
 
         return View(viewModel);
     }

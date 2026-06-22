@@ -269,8 +269,12 @@ public class SessionService(
         var trainerSpecialty = trainer.Specialty.ToString().Trim() ?? string.Empty;
         var categoryName = category.Name?.Trim() ?? string.Empty;
 
+        // Normalize both strings for comparison (remove spaces and underscores)
+        var normalizedTrainerSpecialty = trainerSpecialty.Replace("_", "").Replace(" ", "").ToLowerInvariant();
+        var normalizedCategoryName = categoryName.Replace(" ", "").Replace("_", "").ToLowerInvariant();
+
         // Case-insensitive match
-        if (!string.Equals(trainerSpecialty, categoryName, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(normalizedTrainerSpecialty, normalizedCategoryName, StringComparison.OrdinalIgnoreCase))
         {
             logger.LogWarning("Trainer specialty '{TrainerSpecialty}' does not match category '{CategoryName}'",
                 trainerSpecialty, categoryName);

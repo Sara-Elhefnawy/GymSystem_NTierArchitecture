@@ -2,6 +2,7 @@
 using GymSystem.Domain.DTOs.Plan;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Plan;
+using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,15 +22,7 @@ public class PlanController(IPlanService plans) : Controller
             return View(new List<IndexPlanViewModel>());
         }
 
-        var viewModel = result.Value.Select(p => new IndexPlanViewModel
-        {
-            Id = p.Id,
-            Description = p.Description,
-            DurationDays = p.DurationDays,
-            IsActive = p.IsActive,
-            Name = p.Name,
-            Price = p.Price,
-        }).ToList();
+        var viewModel = result.Value.Adapt<IReadOnlyList<IndexPlanViewModel>>();
 
         return View(viewModel);
     }
@@ -45,15 +38,7 @@ public class PlanController(IPlanService plans) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = new DetailsPlanViewModel
-        {
-            Id = result.Value.Id,
-            Description = result.Value.Description,
-            DurationDays = result.Value.DurationDays,
-            IsActive = result.Value.IsActive,
-            Name = result.Value.Name,
-            Price = result.Value.Price,
-        };
+        var viewModel = result.Value.Adapt<DetailsPlanViewModel>();
 
         return View(viewModel);
     }
@@ -70,14 +55,7 @@ public class PlanController(IPlanService plans) : Controller
             return NotFound();
         }
 
-        var viewModel = new EditPlanViewModel
-        {
-            Id = id,
-            Description = result.Value.Description,
-            DurationDays = result.Value.DurationDays,
-            Price = result.Value.Price,
-            IsActive = result.Value.IsActive
-        };
+        var viewModel = result.Value.Adapt<EditPlanViewModel>();
 
         var planDetails = await plans.GetDetailsAsync(id, ct);
         if (planDetails.IsSuccess)
@@ -111,15 +89,7 @@ public class PlanController(IPlanService plans) : Controller
             return View(model);
         }
 
-        var dto = new EditPlanDTO
-        {
-            Id = id,
-            Description = model.Description,
-            DurationDays = model.DurationDays,
-            Name = model.Name,
-            Price = model.Price,
-            IsActive = model.IsActive
-        };
+        var dto = model.Adapt<EditPlanDTO>();
 
         var result = await plans.UpdateAsync(dto, ct);
 

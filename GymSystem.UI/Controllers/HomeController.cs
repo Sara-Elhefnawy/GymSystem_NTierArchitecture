@@ -2,6 +2,7 @@ using GymSystem.Domain.Abstractions.Services;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels;
 using GymSystem.UI.ViewModels.Home;
+using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -21,15 +22,7 @@ public class HomeController(IDashboardService dashboard) : Controller
             return View(new List<DashboardHomeViewModel>());
         }
 
-        var viewModels = new DashboardHomeViewModel
-        {
-            ActiveMembers = result.Value.ActiveMembers,
-            CompletedSessions = result.Value.CompletedSessions,
-            OngoingSessions = result.Value.OngoingSessions,
-            UpcomingSessions = result.Value.UpcomingSessions,
-            TotalMembers = result.Value.TotalMembers,
-            TotalTrainers = result.Value.TotalTrainers
-        };
+        var viewModels = result.Value.Adapt<DashboardHomeViewModel>();
 
         return View(viewModels);
     }

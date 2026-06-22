@@ -5,7 +5,7 @@ using Mapster;
 
 namespace GymSystem.Domain.Mappings;
 
-public class HealthRecordRegister : IRegister
+public class HealthRecordDTORegister : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
@@ -14,7 +14,7 @@ public class HealthRecordRegister : IRegister
             .Map(dest => dest.BloodType, src => Enum.Parse<BloodType>(src.BloodType, true))
             .Map(dest => dest.Weight, src => src.Weight)
             .Map(dest => dest.Height, src => src.Height)
-            .Map(dest => dest.Note, src => src.Notes == null ? string.Empty : src.Notes.Trim())
+            .Map(dest => dest.Note, src => src.Notes ?? string.Empty)
             .Map(dest => dest.LastUpdate, src => DateTime.UtcNow)
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.MemberId)

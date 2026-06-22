@@ -2,6 +2,7 @@
 using GymSystem.Domain.DTOs.Booking;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Booking;
+using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -29,19 +30,7 @@ public class BookingController(
             return View(new List<IndexBookingViewModel>());
         }
 
-        var viewModel = result.Value.Select(b => new IndexBookingViewModel
-        {
-            AvailableSlots = b.AvailableSlots,
-            Capacity = b.Capacity,
-            Status = b.Status,
-            CategoryName = b.CategoryName,
-            DateDisplay = b.DateDisplay,
-            Description = b.Description,
-            Duration = b.Duration,
-            Id = b.Id,
-            TimeRangeDisplay = b.TimeRangeDisplay,
-            TrainerName = b.TrainerName
-        }).ToList();
+        var viewModel = result.Value.Adapt<IReadOnlyList<IndexBookingViewModel>>();
 
         return View(viewModel);
     }
@@ -57,14 +46,7 @@ public class BookingController(
             return View("BookingDetails", new List<SessionInBookingViewModel>());
         }
 
-        var viewModel = result.Value.Select(b => new SessionInBookingViewModel
-        {
-            BookingDate = b.BookingDate,
-            IsAttended = b.IsAttended,
-            MemberId = b.MemberId,
-            MemberName = b.MemberName,
-            SessionId = b.SessionId
-        }).ToList();
+        var viewModel = result.Value.Adapt<IReadOnlyList<SessionInBookingViewModel>>();
 
         ViewData["SessionId"] = id;
         return View("BookingDetails", viewModel);
@@ -81,14 +63,7 @@ public class BookingController(
             return View("SessionAttendance", new List<SessionInBookingViewModel>());
         }
 
-        var viewModel = result.Value.Select(b => new SessionInBookingViewModel
-        {
-            BookingDate = b.BookingDate,
-            MemberName = b.MemberName,
-            IsAttended = b.IsAttended,
-            MemberId = b.MemberId,
-            SessionId = b.SessionId
-        }).ToList();
+        var viewModel = result.Value.Adapt<IReadOnlyList<SessionInBookingViewModel>>();
 
         ViewData["SessionId"] = id;
         return View("SessionAttendance", viewModel);
@@ -121,11 +96,7 @@ public class BookingController(
     {
         model.SessionId = id;
 
-        var dto = new CreateBookingDTO
-        {
-            SessionId = model.SessionId,
-            MemberId = model.MemberId
-        };
+        var dto = model.Adapt<CreateBookingDTO>();
 
         var result = await _bookings.CreateAsync(dto, ct);
 

@@ -3,6 +3,7 @@ using GymSystem.Domain.DTOs.Trainer;
 using GymSystem.Domain.Entities.Enums;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Trainer;
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -22,14 +23,7 @@ public class TrainerController(ITrainerService trainers) : Controller
             return View(new List<IndexTrainerViewModel>());
         }
 
-        var viewModels = result.Value.Select(m => new IndexTrainerViewModel
-        {
-            Id = m.Id,
-            Name = m.Name,
-            Email = m.Email,
-            Phone = m.Phone,
-            Specialty = m.Specialty
-        }).ToList();
+        var viewModels = result.Value.Adapt<IReadOnlyList<IndexTrainerViewModel>>();
 
         return View(viewModels);
     }
@@ -50,18 +44,7 @@ public class TrainerController(ITrainerService trainers) : Controller
             return View(model);
         }
 
-        var dto = new CreateTrainerDTO
-        {
-            Name = model.Name,
-            Email = model.Email,
-            Phone = model.Phone,
-            DateOfBirth = model.DateOfBirth,
-            Gender = model.Gender,
-            BuildingNumber = model.BuildingNumber,
-            City = model.City,
-            Street = model.Street,
-            Specialties = model.Specialties
-        };
+        var dto = model.Adapt<CreateTrainerDTO>();
 
         var result = await trainers.CreateAsync(dto, ct);
 
@@ -87,16 +70,7 @@ public class TrainerController(ITrainerService trainers) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = new DetailsTrainerViewModel
-        {
-            Id = result.Value.Id,
-            Name = result.Value.Name,
-            Email = result.Value.Email,
-            Phone = result.Value.Phone,
-            Address = result.Value.Address,
-            DateOfBirth = result.Value.DateOfBirth,
-            Specialty = result.Value.Specialty,
-        };
+        var viewModel = result.Value.Adapt<DetailsTrainerViewModel>();
 
         return View(viewModel);
     }
@@ -112,16 +86,7 @@ public class TrainerController(ITrainerService trainers) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = new EditTrainerViewModel
-        {
-            Id = result.Value.Id,
-            Email = result.Value.Email,
-            Phone = result.Value.Phone,
-            BuildingNumber = result.Value.BuildingNumber,
-            City = result.Value.City,
-            Street = result.Value.Street,
-            Specialty = result.Value.Specialty,
-        };
+        var viewModel = result.Value.Adapt<EditTrainerViewModel>();
 
         var trainersDetails = await trainers.GetDetailsAsync(id, ct);
         if (trainersDetails.IsSuccess)
@@ -154,16 +119,7 @@ public class TrainerController(ITrainerService trainers) : Controller
             return View(model);
         }
 
-        var dto = new EditTrainerDTO
-        {
-            Id = model.Id,
-            Email = model.Email,
-            Phone = model.Phone,
-            BuildingNumber = model.BuildingNumber,
-            City = model.City,
-            Street = model.Street,
-            Specialty = model.Specialty
-        };
+        var dto = model.Adapt<EditTrainerDTO>();
 
         var result = await trainers.UpdateAsync(dto, ct);
 
@@ -204,11 +160,7 @@ public class TrainerController(ITrainerService trainers) : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = new DeleteTrainerViewModel
-        {
-            Id = id,
-            Name = result.Value.Name,
-        };
+        var viewModel = result.Value.Adapt<DeleteTrainerViewModel>();
 
         return View(viewModel);
     }

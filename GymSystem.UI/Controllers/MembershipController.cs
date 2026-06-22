@@ -2,6 +2,7 @@
 using GymSystem.Domain.DTOs.Membership;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Memberships;
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -28,16 +29,7 @@ public class MembershipController(
             return View(new List<IndexMembershipViewModel>());
         }
 
-        var viewModel = result.Value.Select(m => new IndexMembershipViewModel
-        {
-            Id = m.Id,
-            MemberId = m.MemberId,
-            MemberName = m.MemberName,
-            PlanName = m.PlanName,
-            StartDate = m.StartDate,
-            EndDate = m.EndDate,
-            Photo = m.Photo
-        }).ToList();
+        var viewModel = result.Value.Adapt<IReadOnlyList<IndexMembershipViewModel>>();
 
         return View(viewModel);
     }
@@ -69,11 +61,7 @@ public class MembershipController(
             return View(model);
         }
 
-        var dto = new CreateMembershipDTO
-        {
-            MemberId = model.MemberId,
-            PlanId = model.PlanId
-        };
+        var dto = model.Adapt<CreateMembershipDTO>();
 
         var result = await _membershipService.CreateMembershipAsync(dto, ct);
 

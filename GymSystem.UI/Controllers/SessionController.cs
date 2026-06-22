@@ -1,7 +1,10 @@
 ﻿using GymSystem.Domain.Abstractions.Services;
+using GymSystem.Domain.Common;
 using GymSystem.Domain.DTOs.Session;
+using GymSystem.Domain.DTOs.Session.Lookups;
 using GymSystem.UI.Helpers;
 using GymSystem.UI.ViewModels.Session;
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -24,37 +27,40 @@ public class SessionController(
             return View(new List<IndexSessionViewModel>());
         }
 
-        var viewModels = result.Value.Select(dto => new IndexSessionViewModel
-        {
-            Id = dto.Id,
-            CategoryName = dto.CategoryName,
-            Description = dto.Description,
-            TrainerName = dto.TrainerName,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            Duration = dto.EndDate - dto.StartDate,
-            MaxCapacity = dto.MaxCapacity,
-            AvailableSlots = dto.AvailableSlots,
-            Status = dto.Status
-        }).ToList();
+        var viewModels = result.Value.Adapt<IReadOnlyList<IndexSessionViewModel>>();
 
         return View(viewModels);
     }
 
     [HttpGet("ChooseCategory")]
-    public async Task<IActionResult> ChooseCategory()
+    public async Task<IActionResult> ChooseCategory(CancellationToken ct = default)
     {
-        var categoriesList = await GetCategorySelectList();
+        var result = await categories.GetAllAsync(ct);
+
+        if (result.IsFailure)
+        {
+            this.HandleErrorResult(result);
+            return View(new List<SelectListItem>());
+        }
+
+        var categoriesList = result.Value
+            .Select(c => new SelectListItem
+            {
+                Value = c.Id.ToString(),
+                Text = c.Name
+            })
+            .ToList();
+
         return View(categoriesList);
     }
 
     [HttpGet("Create/{categoryId:int}")]
     public async Task<IActionResult> Create(int categoryId, CancellationToken ct)
     {
-        var categoryResult = await categories.GetAllAsync();
+        var categoryResult = await categories.GetAllAsync(ct);
         var category = categoryResult.Value?.FirstOrDefault(c => c.Id == categoryId);
 
-        if (category == null)
+        if (category is null)
         {
             TempData["Error"] = "Category not found";
             return RedirectToAction(nameof(ChooseCategory));
@@ -62,51 +68,54 @@ public class SessionController(
 
         var availableTrainers = await GetTrainersByCategoryNameSelectList(category.Name);
 
-        var viewModel = new CreateSessionViewModel
-        {
-            CategoryId = categoryId,
-            CategoryName = category.Name,
-            TrainerList = availableTrainers,
-            Capacity = 25,
-            StartDate = DateTime.Now,
-            EndDate = DateTime.Now.AddHours(1)
-        };
+        var viewModel = (category, availableTrainers).Adapt<CreateSessionViewModel>();
+        viewModel.TrainerList = availableTrainers;
 
         return View(viewModel);
     }
 
     [HttpPost("Create/{categoryId:int}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(int categoryId, CreateSessionViewModel model, CancellationToken ct)
+    public async Task<IActionResult> Create([FromRoute] int categoryId, CreateSessionViewModel model, CancellationToken ct)
     {
-        if (categoryId != model.CategoryId)
+        if (model.CategoryId == 0 && categoryId > 0)
         {
-            TempData["Error"] = "Category mismatch";
+            model.CategoryId = categoryId;
+            Console.WriteLine($"Using route CategoryId: {categoryId}");
+        }
+
+        if (model.CategoryId == 0)
+        {
+            TempData["Error"] = "Invalid category";
             return RedirectToAction(nameof(ChooseCategory));
         }
 
+        var categoryResult = await categories.GetAllAsync(ct);
+        var category = categoryResult.Value?.FirstOrDefault(c => c.Id == model.CategoryId);
+
+        if (category is null)
+        {
+            TempData["Error"] = "Category not found";
+            return RedirectToAction(nameof(ChooseCategory));
+        }
+
+        model.CategoryName = category.Name;
+
         ModelState.Remove("CategoryName");
+
 
         if (!ModelState.IsValid)
         {
-            var categoryResult = await categories.GetAllAsync();
-            var category = categoryResult.Value?.FirstOrDefault(c => c.Id == categoryId);
-            model.CategoryName = category?.Name ?? "";
-            model.TrainerList = await GetTrainersByCategoryNameSelectList(category?.Name ?? "");
+            model.TrainerList = await GetTrainersByCategoryNameSelectList(category.Name);
+
+            Console.WriteLine($"Validation failed. Category: {category.Name}, CategoryId: {categoryId}");
+            Console.WriteLine($"ModelState errors: {string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))}");
 
             TempData["Error"] = "Please correct the validation errors.";
             return View(model);
         }
 
-        var dto = new CreateSessionDTO
-        {
-            CategoryId = model.CategoryId,
-            TrainerId = model.TrainerId,
-            Description = model.Description,
-            Capacity = model.Capacity,
-            StartDate = model.StartDate,
-            EndDate = model.EndDate
-        };
+        var dto = model.Adapt<CreateSessionDTO>();
 
         var result = await sessions.CreateAsync(dto, ct);
 
@@ -119,10 +128,8 @@ public class SessionController(
         // Use the error handler
         this.HandleErrorResult(result, ModelState);
 
-        var categoryData = await categories.GetAllAsync(ct);
-        var categoryInfo = categoryData.Value?.FirstOrDefault(c => c.Id == categoryId);
-        model.CategoryName = categoryInfo?.Name ?? "";
-        model.TrainerList = await GetTrainersByCategoryNameSelectList(categoryInfo?.Name ?? "");
+        model.TrainerList = await GetTrainersByCategoryNameSelectList(category.Name);
+        model.CategoryName = category.Name;
 
         return View(model);
     }
@@ -138,18 +145,7 @@ public class SessionController(
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = new DetailsSessionViewModel
-        {
-            Id = id,
-            CategoryName = result.Value.CategoryName,
-            TrainerName = result.Value.TrainerName,
-            StartDate = result.Value.StartDate,
-            EndDate = result.Value.EndDate,
-            Capacity = result.Value.Capacity,
-            AvailableSlots = result.Value.AvailableSlots,
-            Description = result.Value.Description,
-            Status = result.Value.Status
-        };
+        var viewModel = result.Value.Adapt<DetailsSessionViewModel>();
 
         return View(viewModel);
     }
@@ -172,7 +168,6 @@ public class SessionController(
             return RedirectToAction(nameof(Index));
         }
 
-        var canEdit = detailsResult.Value.StartDate > DateTime.Now;
         var availableTrainers = await GetTrainersByCategoryNameSelectList(detailsResult.Value.CategoryName);
 
         var viewModel = new EditSessionViewModel
@@ -184,12 +179,12 @@ public class SessionController(
             Description = editResult.Value.Description,
             StartDate = editResult.Value.StartDate,
             EndDate = editResult.Value.EndDate,
-            CanEdit = canEdit,
+            CanEdit = detailsResult.Value.StartDate > DateTime.Now,
             Status = detailsResult.Value.Status.ToString(),
             TrainerList = availableTrainers
         };
 
-        if (!canEdit)
+        if (!viewModel.CanEdit)
         {
             TempData["Warning"] = $"This session is {detailsResult.Value.Status.ToString().ToLower()} and cannot be edited.";
         }
@@ -206,6 +201,14 @@ public class SessionController(
             model.Id = id;
         }
 
+        Console.WriteLine($"=== Edit POST ===");
+        Console.WriteLine($"Route ID: {id}");
+        Console.WriteLine($"Model ID: {model.Id}");
+        Console.WriteLine($"Model TrainerId: {model.TrainerId}");
+        Console.WriteLine($"Model Description: {model.Description}");
+        Console.WriteLine($"Model StartDate: {model.StartDate}");
+        Console.WriteLine($"Model EndDate: {model.EndDate}");
+
         ModelState.Remove("CategoryName");
         ModelState.Remove("MaxCapacity");
         ModelState.Remove("Status");
@@ -219,7 +222,7 @@ public class SessionController(
             return RedirectToAction(nameof(Index));
         }
 
-        if (model == null)
+        if (model is null)
         {
             model = new EditSessionViewModel();
         }
@@ -246,14 +249,7 @@ public class SessionController(
             return View(model);
         }
 
-        var dto = new EditSessionDTO
-        {
-            Id = id,
-            Description = model.Description,
-            EndDate = model.EndDate,
-            StartDate = model.StartDate,
-            TrainerId = model.TrainerId
-        };
+        var dto = model.Adapt<EditSessionDTO>();
 
         var result = await sessions.UpdateAsync(dto, ct);
 
@@ -285,19 +281,7 @@ public class SessionController(
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = new DeleteSessionViewModel
-        {
-            Id = id,
-            Specialty = result.Value.Specialty,
-            TrainerName = result.Value.TrainerName,
-            Description = result.Value.Description,
-            StartDate = result.Value.StartDate,
-            EndDate = result.Value.EndDate,
-            BookedCount = result.Value.BookedCount,
-            MaxCapacity = result.Value.MaxCapacity,
-            Status = result.Value.Status.ToString(),
-            CanDelete = result.Value.CanDelete
-        };
+        var viewModel = result.Value.Adapt<DeleteSessionViewModel>();
 
         return View(viewModel);
     }
@@ -315,19 +299,7 @@ public class SessionController(
             var getResult = await sessions.GetForDeleteAsync(id, ct);
             if (getResult.IsSuccess)
             {
-                var viewModel = new DeleteSessionViewModel
-                {
-                    Id = getResult.Value.Id,
-                    Specialty = getResult.Value.Specialty,
-                    TrainerName = getResult.Value.TrainerName,
-                    Description = getResult.Value.Description,
-                    StartDate = getResult.Value.StartDate,
-                    EndDate = getResult.Value.EndDate,
-                    BookedCount = getResult.Value.BookedCount,
-                    MaxCapacity = getResult.Value.MaxCapacity,
-                    Status = getResult.Value.Status.ToString(),
-                    CanDelete = getResult.Value.CanDelete
-                };
+                var viewModel = getResult.Value.Adapt<DeleteSessionViewModel>();
 
                 return View("Delete", viewModel);
             }
@@ -343,21 +315,9 @@ public class SessionController(
     {
         try
         {
-            var specialty = categoryName switch
+            if (string.IsNullOrEmpty(categoryName))
             {
-                "Yoga" => "Yoga",
-                "Cardio" => "Cardio",
-                "CrossFit" => "CrossFit",
-                "Boxing" => "Boxing",
-                "Bodybuilding" => "Bodybuilding",
-                "General Fitness" => "GeneralFitness",
-                "Personal Training" => "PersonalTraining",
-                _ => ""
-            };
-
-            if (string.IsNullOrEmpty(specialty))
-            {
-                Console.WriteLine($"Warning: No specialty mapping found for category '{categoryName}'");
+                Console.WriteLine($"Warning: Category name is null or empty");
                 return new SelectList(new List<SelectListItem>());
             }
 
@@ -365,11 +325,20 @@ public class SessionController(
             if (trainersResult.IsFailure || trainersResult.Value == null)
                 return new SelectList(new List<SelectListItem>());
 
+            // Normalize the category name (remove spaces and underscores, lowercase)
+            var normalizedCategory = categoryName.Replace(" ", "").Replace("_", "").ToLowerInvariant();
+
             var filteredTrainers = trainersResult.Value
-                .Where(t => t.Specialty == specialty)
+                .Where(t =>
+                {
+                    var specialtyString = t.Specialty?.ToString() ?? "";
+                    // Normalize the specialty (remove underscores, spaces, lowercase)
+                    var normalizedSpecialty = specialtyString.Replace("_", "").Replace(" ", "").ToLowerInvariant();
+                    return string.Equals(normalizedSpecialty, normalizedCategory, StringComparison.OrdinalIgnoreCase);
+                })
                 .ToList();
 
-            Console.WriteLine($"Found {filteredTrainers.Count} trainers for specialty {specialty}");
+            Console.WriteLine($"Found {filteredTrainers.Count} trainers for category '{categoryName}'");
 
             return new SelectList(filteredTrainers, "Id", "Name");
         }
@@ -378,14 +347,5 @@ public class SessionController(
             Console.WriteLine($"Error getting trainers: {ex.Message}");
             return new SelectList(new List<SelectListItem>());
         }
-    }
-
-    private async Task<SelectList> GetCategorySelectList()
-    {
-        var result = await categories.GetAllAsync();
-        if (result.IsFailure || result.Value == null)
-            return new SelectList(new List<SelectListItem>());
-
-        return new SelectList(result.Value.ToList(), "Id", "Name");
     }
 }

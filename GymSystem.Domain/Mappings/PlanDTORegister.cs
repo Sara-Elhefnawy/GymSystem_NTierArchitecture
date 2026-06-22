@@ -4,7 +4,7 @@ using Mapster;
 
 namespace GymSystem.Domain.Mappings;
 
-public class PlanRegister : IRegister
+public class PlanDTORegister : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {

@@ -45,7 +45,7 @@
                                     Trainer <span class="text-danger">*</span>
                                 </label>
 
-                                <select asp-for="TrainerId" asp-items="@(Model.TrainerList ?? new SelectList(new List<SelectListItem>()))" class="form-select" disabled="@(!Model.CanEdit)">
+                                <select asp-for="TrainerId" asp-items="@(Model.TrainerList)" class="form-select" disabled="@(!Model.CanEdit)">
                                     <option value="">-- Select Trainer --</option>
                                 </select>
 

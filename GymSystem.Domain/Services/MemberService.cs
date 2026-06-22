@@ -67,7 +67,10 @@ public class MemberService(
             var phone = model.Phone.Trim();
             var name = model.Name.Trim();
 
-            var age = CalculateAge(model.DateOfBirth);
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var age = today.Year - model.DateOfBirth.Year;
+            if (model.DateOfBirth > today.AddYears(-age)) age--;
+
             if (age < 12 || age > 120)
                 return Result.Fail("Age must be between 12 and 120", "INVALID_AGE");
 
@@ -434,13 +437,5 @@ public class MemberService(
             logger.LogError(ex, "Error getting photo for member {Id}", id);
             return Result.Fail<byte[]>("Failed to retrieve photo", "DATABASE_ERROR");
         }
-    }
-
-    private int CalculateAge(DateOnly dateOfBirth)
-    {
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        var age = today.Year - dateOfBirth.Year;
-        if (dateOfBirth > today.AddYears(-age)) age--;
-        return age;
     }
 }

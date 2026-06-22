@@ -4,7 +4,7 @@ using Mapster;
 
 namespace GymSystem.Domain.Mappings;
 
-public class MembershipRegister : IRegister
+public class MembershipDTORegister : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {

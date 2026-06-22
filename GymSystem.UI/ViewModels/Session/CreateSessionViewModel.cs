@@ -6,8 +6,6 @@ namespace GymSystem.UI.ViewModels.Session;
 public class CreateSessionViewModel
 {
     public string CategoryName { get; set; } = default!;
-
-    [Required(ErrorMessage = "Category is required")]
     public int CategoryId { get; set; }
 
     [Required(ErrorMessage = "Trainer is required")]

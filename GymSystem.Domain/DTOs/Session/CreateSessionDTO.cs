@@ -1,5 +1,4 @@
-﻿using GymSystem.Domain.DTOs.Session.Lookups;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace GymSystem.Domain.DTOs.Session;
 

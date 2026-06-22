@@ -11,17 +11,14 @@
     </header>
 
     <form asp-action="Create" asp-controller="Session" asp-route-categoryId="@Model.CategoryId" method="post">
+
+        <input type="hidden" asp-for="CategoryId" />
+        <input type="hidden" asp-for="CategoryName" />
+
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4">
-
-                        <!-- Category is fixed - display only -->
-                        <div class="alert alert-info mb-4">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Category:</strong> @Model.CategoryName
-                            <small class="text-muted d-block mt-1">Only trainers qualified for @Model.CategoryName will appear below</small>
-                        </div>
 
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">

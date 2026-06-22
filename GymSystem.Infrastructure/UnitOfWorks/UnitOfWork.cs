@@ -2,14 +2,11 @@
 using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Infrastructure.Data;
 using GymSystem.Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace GymSystem.Infrastructure.UnitOfWorks;
 
-public sealed class UnitOfWork : IUnitOfWork
+public sealed class UnitOfWork(GymAppDbContext dbContext) : IUnitOfWork
 {
-    private readonly GymAppDbContext _dbContext;
-
     private IMemberRepository? _members;
     private IPlanRepository? _plans;
     private ISessionRepository? _sessions;
@@ -19,38 +16,32 @@ public sealed class UnitOfWork : IUnitOfWork
     private ICategoryRepository? _categories;
     private IMembershipRepository? _memberships;
 
-
-    public UnitOfWork(GymAppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
-
     public IMemberRepository Members
-        => _members ??= new MemberRepository(_dbContext);
+        => _members ??= new MemberRepository(dbContext);
 
     public IPlanRepository Plans
-        => _plans ??= new PlanRepository(_dbContext);
+        => _plans ??= new PlanRepository(dbContext);
 
     public ITrainerRepository Trainers
-        => _trainers ??= new TrainerRepository(_dbContext);
+        => _trainers ??= new TrainerRepository(dbContext);
 
     public ISessionRepository Sessions
-        => _sessions ??= new SessionRepository(_dbContext);
+        => _sessions ??= new SessionRepository(dbContext);
 
     public IBookingRepository Bookings
-        => _bookings ??= new BookingRepository(_dbContext);
+        => _bookings ??= new BookingRepository(dbContext);
 
     public ICategoryRepository Categories
-        => _categories ??= new CategoryRepository(_dbContext);
+        => _categories ??= new CategoryRepository(dbContext);
 
     public IHealthRecordRepository HealthRecords
-        => _healthRecords ??= new HealthRecordRepository(_dbContext);
+        => _healthRecords ??= new HealthRecordRepository(dbContext);
 
     public IMembershipRepository Memberships
-        => _memberships ??= new MembershipRepository(_dbContext);
+        => _memberships ??= new MembershipRepository(dbContext);
 
     public async Task<int> SaveChangesAsync(CancellationToken ct = default) 
-        => await _dbContext.SaveChangesAsync(ct);
+        => await dbContext.SaveChangesAsync(ct);
 
-    public void Dispose() => _dbContext.Dispose();
+    public void Dispose() => dbContext.Dispose();
 }
