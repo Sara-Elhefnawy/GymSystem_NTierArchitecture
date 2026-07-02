@@ -11,14 +11,22 @@ public class AnonymizationService : IAnonymizationService
         {
             case Member member:
                 if (!string.IsNullOrEmpty(member.Email))
-                    member.Email = $"{member.Id}_deleted_{Guid.NewGuid():N}";
+                {
+                    var anonymizedEmail = $"{member.Name}_deleted_{Guid.NewGuid():N}@anonymized.com";
+                    member.Email = anonymizedEmail;
 
+                    member.Phone = "01000000000";
+                }
                 break;
 
             case Trainer trainer:
                 if (!string.IsNullOrEmpty(trainer.Email))
-                    trainer.Email = $"{trainer.Id}_deleted_{Guid.NewGuid():N}";
+                {
+                    var anonymizedEmail = $"{trainer.Name}_deleted_{Guid.NewGuid():N}@anonymized.com";
+                    trainer.Email = anonymizedEmail;
 
+                    trainer.Phone = "01000000000"; // valid-format placeholder, passes GymUser_PhoneCheck
+                }
                 break;
         }
     }

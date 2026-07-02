@@ -1,20 +1,20 @@
 ﻿using GymSystem.Domain.Abstractions.Anonymization;
+using GymSystem.Domain.Abstractions.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace GymSystem.Infrastructure.Interceptor;
+namespace GymSystem.Infrastructure.Interceptors;
 
-public class SoftDeleteInterceptor : SaveChangesInterceptor
+public class SoftDeleteInterceptor : SaveChangesInterceptor, ISoftDeleteInterceptor
 {
     private readonly IAnonymizationService _anonymizationService;
 
-    public SoftDeleteInterceptor(
-        IAnonymizationService anonymizationService)
+    public SoftDeleteInterceptor(IAnonymizationService anonymizationService)
     {
         _anonymizationService = anonymizationService;
     }
 
-    private void ApplySoftDelete(DbContext context)
+    public void ApplySoftDelete(DbContext context)
     {
         var deletedEntries = context.ChangeTracker.Entries()
             .Where(e => e.State == EntityState.Deleted)
@@ -22,18 +22,37 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
 
         foreach (var entry in deletedEntries)
         {
-            var isDeletedProp = entry.Entity.GetType().GetProperty("IsDeleted");
-            if (isDeletedProp is null) continue;
+            var entityType = entry.Entity.GetType();
+            var isDeletedProp = entityType.GetProperty("IsDeleted");
+
+            if (isDeletedProp is null)
+            {
+                // Owned/dependent entity (e.g. Address) with no soft-delete concept of its own.
+                // It was cascaded into Deleted state along with its owner — reset it so EF
+                // doesn't try to null out its table-split columns.
+                entry.State = EntityState.Unchanged;
+                continue;
+            }
 
             entry.State = EntityState.Modified;
+
             isDeletedProp.SetValue(entry.Entity, true);
 
-            var deletedAtProp = entry.Entity.GetType().GetProperty("DeletedAt");
-            deletedAtProp?.SetValue(entry.Entity, DateTime.UtcNow);
+            var deletedAtProp = entityType.GetProperty("DeletedAt");
+            if (deletedAtProp != null)
+            {
+                deletedAtProp.SetValue(entry.Entity, DateTime.UtcNow);
+            }
 
-            // ONLY anonymize if you need to free up unique constraints
-            // Your filtered indexes already handle this!
             _anonymizationService.Anonymize(entry.Entity);
+
+            foreach (var property in entry.Properties)
+            {
+                if (property.Metadata.GetAfterSaveBehavior() != Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Save)
+                    continue;
+
+                property.IsModified = true;
+            }
         }
     }
 

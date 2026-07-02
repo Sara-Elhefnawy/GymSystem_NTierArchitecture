@@ -1,6 +1,13 @@
 <Solution>
-  <Project Path="GymSystem.ArchTests/GymSystem.ArchTests.csproj" Id="6353ae4b-d150-4f00-a350-db3f1d53df52" />
-  <Project Path="GymSystem.Domain/GymSystem.Domain.csproj" />
-  <Project Path="GymSystem.Infrastructure/GymSystem.Infrastructure.csproj" />
-  <Project Path="GymSystem.UI/GymSystem.UI.csproj" />
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="GymSystem.Domain/GymSystem.Domain.csproj" />
+    <Project Path="GymSystem.Infrastructure/GymSystem.Infrastructure.csproj" />
+    <Project Path="GymSystem.UI/GymSystem.UI.csproj" />
+  </Folder>
+  <Folder Name="/Test/">
+    <Project Path="GymSystem.ArchTests/GymSystem.ArchTests.csproj" Id="6353ae4b-d150-4f00-a350-db3f1d53df52" />
+  </Folder>
 </Solution>

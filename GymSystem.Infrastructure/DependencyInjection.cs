@@ -1,10 +1,11 @@
 ﻿using GymSystem.Domain.Abstractions.Anonymization;
+using GymSystem.Domain.Abstractions.Interceptors;
 using GymSystem.Domain.Abstractions.QueryService;
 using GymSystem.Domain.Abstractions.Repositories;
 using GymSystem.Domain.Abstractions.UnitOfWorks;
 using GymSystem.Infrastructure.Anonymization;
 using GymSystem.Infrastructure.Data;
-using GymSystem.Infrastructure.Interceptor;
+using GymSystem.Infrastructure.Interceptors;
 using GymSystem.Infrastructure.QueryService;
 using GymSystem.Infrastructure.Repositories;
 using GymSystem.Infrastructure.Seeders;
@@ -19,6 +20,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddScoped<IAuditInterceptor, AuditInterceptor>();
+        services.AddScoped<ISoftDeleteInterceptor, SoftDeleteInterceptor>();
+
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<SoftDeleteInterceptor>();
 
@@ -30,7 +34,7 @@ public static class DependencyInjection
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found."),
                 sqlOptions => sqlOptions.MigrationsAssembly(typeof(GymAppDbContext).Assembly.FullName));
-            options.AddInterceptors(auditInterceptor, softDeleteInterceptor);
+            options.AddInterceptors(softDeleteInterceptor, auditInterceptor);
         });
 
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));

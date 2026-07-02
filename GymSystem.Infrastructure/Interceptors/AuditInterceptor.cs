@@ -1,14 +1,14 @@
-﻿using GymSystem.Domain.Entities;
+﻿using GymSystem.Domain.Abstractions.Interceptors;
+using GymSystem.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 
-namespace GymSystem.Infrastructure.Interceptor;
+namespace GymSystem.Infrastructure.Interceptors;
 
-public class AuditInterceptor : SaveChangesInterceptor
+public class AuditInterceptor : SaveChangesInterceptor, IAuditInterceptor
 {
-    public AuditInterceptor() {}
-
-    private void ApplyAudit(DbContext context)
+    public void ApplyAudit(DbContext context)
     {
         //var currentUser = "System";
         var now = DateTime.UtcNow;

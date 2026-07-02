@@ -44,8 +44,6 @@ public class Repository<TEntity>(GymAppDbContext dbContext) : IRepository<TEntit
 
     public Task SoftDeleteAsync(TEntity entity, CancellationToken ct = default)
     {
-        entity.IsDeleted = true;
-
         // Check if EF Core is already tracking this object
         var entry = _dbContext.Entry(entity);
 
@@ -53,12 +51,8 @@ public class Repository<TEntity>(GymAppDbContext dbContext) : IRepository<TEntit
         if (entry.State == EntityState.Detached)
             _dbSet.Attach(entity);
 
-        // is better than => _dbSet.Update(entity);
-        _dbContext.Entry(entity).Property(x => x.IsDeleted).IsModified = true;
-        //    this ensures that only the IsDeleted field is updated in the database,
-        //      rather than all fields of the entity: Update(entity)
-        //    This can be more efficient and reduces the risk of accidentally overwriting
-        //      other fields if the entity has been modified elsewhere in the code.
+        // interceptor will convert this to soft-delete
+        entry.State = EntityState.Deleted;
 
         return Task.CompletedTask;
     }

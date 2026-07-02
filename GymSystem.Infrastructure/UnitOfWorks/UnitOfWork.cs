@@ -40,7 +40,7 @@ public sealed class UnitOfWork(GymAppDbContext dbContext) : IUnitOfWork
     public IMembershipRepository Memberships
         => _memberships ??= new MembershipRepository(dbContext);
 
-    public async Task<int> SaveChangesAsync(CancellationToken ct = default) 
+    public async Task<int> SaveChangesAsync(CancellationToken ct = default)
         => await dbContext.SaveChangesAsync(ct);
 
     public void Dispose() => dbContext.Dispose();
