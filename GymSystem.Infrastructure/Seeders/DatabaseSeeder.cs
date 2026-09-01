@@ -32,7 +32,6 @@ public class DatabaseSeeder(
 
     public async Task SeedDataAsync()
     {
-        await dbContext.Database.EnsureCreatedAsync();
         await dbContext.Database.MigrateAsync();
 
         await PlanSeeder.SeedAsync(dbContext);

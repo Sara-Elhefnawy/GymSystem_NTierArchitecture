@@ -25,7 +25,6 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.MapDefaultControllerRoute();
 
 app.UseAuthentication();   // decrypt cookie and create the ClaimPrincipal(User)
 app.UseAuthorization();
@@ -34,11 +33,8 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-if (app.Environment.IsDevelopment())
-{
-    await using var scope = app.Services.CreateAsyncScope();
-    var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-    await seeder.SeedAllAsync();
-}
+await using var scope = app.Services.CreateAsyncScope();
+var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+await seeder.SeedAllAsync();
 
 app.Run();

@@ -89,7 +89,7 @@ public class CheckInController : Controller
                 wasAutoBooked = checkInResult.WasAutoBooked
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return Json(new { success = false, message = "An error occurred during check-in" });
         }

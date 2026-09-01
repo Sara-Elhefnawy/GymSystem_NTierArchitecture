@@ -17,7 +17,7 @@
         </div>
     }
 
-    <form asp-action="Edit" asp-controller="Session" asp-route-id="@Model.Id" method="post" id="editForm">
+    <form asp-action="Edit" asp-controller="Session" asp-route-id="@Model?.Id" method="post" id="editForm">
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card shadow-sm border-0">
@@ -28,11 +28,11 @@
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-muted">Category</label>
-                                <div class="form-control-plaintext">@Model.CategoryName</div>
+                                <div class="form-control-plaintext">@Model?.CategoryName</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-muted">Max Capacity</label>
-                                <div class="form-control-plaintext">@Model.MaxCapacity participants</div>
+                                <div class="form-control-plaintext">@Model?.MaxCapacity participants</div>
                             </div>
                         </div>
 
@@ -45,7 +45,7 @@
                                     Trainer <span class="text-danger">*</span>
                                 </label>
 
-                                <select asp-for="TrainerId" asp-items="@(Model.TrainerList)" class="form-select" disabled="@(!Model.CanEdit)">
+                                <select asp-for="TrainerId" asp-items="@(Model?.TrainerList)" class="form-select" disabled="@(!Model.CanEdit)">
                                     <option value="">-- Select Trainer --</option>
                                 </select>
 

@@ -5,22 +5,22 @@
     if (TempData["Success"] != null)
     {
         toastType = "bg-success";
-        toastMessage = TempData["Success"].ToString();
+        toastMessage = TempData["Success"]!.ToString();
     }
     else if (TempData["Error"] != null)
     {
         toastType = "bg-danger";
-        toastMessage = TempData["Error"].ToString();
+        toastMessage = TempData["Error"]!.ToString();
     }
     else if (TempData["Warning"] != null)
     {
         toastType = "bg-warning";
-        toastMessage = TempData["Warning"].ToString();
+        toastMessage = TempData["Warning"]!.ToString();
     }
     else if (TempData["Info"] != null)
     {
         toastType = "bg-info";
-        toastMessage = TempData["Info"].ToString();
+        toastMessage = TempData["Info"]!.ToString();
     }
 }
 

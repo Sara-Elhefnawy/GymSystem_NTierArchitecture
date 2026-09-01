@@ -60,7 +60,7 @@ public class SessionViewModelRegister : IRegister
             .Map(dest => dest.StartDate, src => DateTime.Now)
             .Map(dest => dest.EndDate, src => DateTime.Now.AddHours(1))
             .Map(dest => dest.Description, src => string.Empty)
-            .Ignore(dest => dest.TrainerList);
+            .Ignore(dest => dest.TrainerList!);
 
         // Map from DeleteSessionDTO to DeleteSessionViewModel
         config.NewConfig<DeleteSessionDTO, DeleteSessionViewModel>()
